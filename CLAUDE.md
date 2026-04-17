@@ -59,6 +59,108 @@ Monorepo with npm workspaces: `client/` and `server/`.
 
 Cell amount is auto-calculated as `target_amount / cell_count`. Filled cells require a pledge_content (承诺书). Unfill is a two-step: request → partner approves.
 
+## Deployment (PM2)
+
+### Build
+
+```bash
+# In project root — builds client first, then server
+npm run build
+```
+
+Output: `client/dist/` (static files) + `server/dist/` (ESM .js files).
+
+### PM2 Start
+
+```bash
+# On the server (e.g. /opt/heal)
+pm2 start server/dist/index.js --name heal
+```
+
+Key points:
+- Node must support ESM (Node 16+). The server uses `"type": "module"` in package.json.
+- All relative imports use `.js` extensions (required by ESM resolution). TypeScript `module: "Node16"`, `moduleResolution: "Node16"` enforces this at build time.
+- No separate client server needed — Express serves the built frontend from `client/dist/` in production (see `server/src/index.ts`).
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `4000` | Server listen port |
+| `JWT_SECRET` | `heal-savings-secret-key-change-in-prod` | JWT signing key (MUST change in production) |
+
+### Data Persistence
+
+- SQLite file: `data/heal.sqlite` (relative to CWD). Ensure the PM2 CWD is the project root so the DB file is at `/opt/heal/data/heal.sqlite`.
+- Every write calls `saveDb()` immediately (except inside transactions), so the file is always up-to-date.
+- **Backup**: periodically copy `data/heal.sqlite` (stop the process first for a clean snapshot, or use SQLite `.backup` command).
+
+### PM2 Ecosystem Config (Optional)
+
+Create `ecosystem.config.cjs` at project root:
+
+```js
+module.exports = {
+  apps: [{
+    name: 'heal',
+    script: 'server/dist/index.js',
+    cwd: '/opt/heal',       // must be project root for DB path
+    env: {
+      PORT: 4000,
+      JWT_SECRET: 'your-production-secret',
+    },
+  }]
+}
+```
+
+Then: `pm2 start ecosystem.config.cjs`
+
+### Common Operations
+
+```bash
+pm2 logs heal          # View logs
+pm2 restart heal       # Restart after rebuild
+pm2 stop heal          # Stop
+pm2 delete heal        # Remove from PM2
+pm2 monit              # CPU/memory monitor
+```
+
+After code changes: `npm run build && pm2 restart heal`
+
+## Frontend-Backend Communication
+
+### Development Mode
+
+```
+Browser → Vite dev server (:3000) ──proxy /api──→ Express (:4000)
+                      ↑                              ↑
+           React HMR, static assets           API + DB
+```
+
+- Vite dev server runs on port 3000 with HMR.
+- `vite.config.ts` proxies all `/api` requests to `http://localhost:4000`.
+- No CORS issues because the browser only talks to Vite.
+
+### Production Mode
+
+```
+Browser ──→ Express (:4000)
+              ├── /api/*     → API routes (auth, partner, plans)
+              └── /*         → client/dist/index.html (SPA fallback)
+```
+
+- Single origin: Express serves both API and static files.
+- `server/src/index.ts`: `express.static(clientDist)` + `app.get('*', ...)` SPA fallback.
+- No CORS, no proxy — browser and API share the same host:port.
+- Client API base is `/api` (relative path, `client/src/services/api.ts`), works in both dev and prod without changes.
+
+### Auth Flow
+
+1. Client stores JWT in `localStorage` after login/register.
+2. Every API request auto-injects `Authorization: Bearer <token>` header via `client/src/services/api.ts`.
+3. Server validates token via `authMiddleware` on protected routes.
+4. Token expires in 30 days.
+
 ## Language
 
 All UI text and server error messages are in **Chinese (简体中文)**.
