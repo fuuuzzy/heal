@@ -1,0 +1,425 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light theme (default) */
+  :root {
+    --rgb-surface: 255 255 255;
+    --rgb-surface-dark: 245 245 248;
+    --rgb-surface-elevated: 240 240 244;
+    --rgb-surface-hover: 232 232 237;
+    --rgb-line: 226 226 232;
+    --rgb-line-light: 208 208 216;
+    --rgb-line-faint: 235 235 240;
+    --rgb-gold: 168 120 36;
+    --rgb-gold-light: 188 142 56;
+    --rgb-gold-dark: 138 98 28;
+    --rgb-mate: 79 79 200;
+    --rgb-mate-light: 110 110 222;
+    --rgb-txt-primary: 26 26 34;
+    --rgb-txt-secondary: 107 107 120;
+    --rgb-txt-muted: 148 148 160;
+    --rgb-danger: 210 38 38;
+    --rgb-success: 22 148 68;
+    --rgb-on-gold: 255 255 255;
+    --cell-mine-bg: rgba(168, 120, 36, 0.10);
+    --cell-mate-bg: rgba(79, 79, 200, 0.10);
+  }
+
+  /* Dark theme */
+  .dark {
+    --rgb-surface: 26 26 32;
+    --rgb-surface-dark: 15 15 18;
+    --rgb-surface-elevated: 34 34 40;
+    --rgb-surface-hover: 42 42 50;
+    --rgb-line: 45 45 53;
+    --rgb-line-light: 58 58 66;
+    --rgb-line-faint: 31 31 38;
+    --rgb-gold: 201 150 59;
+    --rgb-gold-light: 219 169 78;
+    --rgb-gold-dark: 166 123 46;
+    --rgb-mate: 99 102 241;
+    --rgb-mate-light: 129 140 248;
+    --rgb-txt-primary: 237 237 239;
+    --rgb-txt-secondary: 148 148 160;
+    --rgb-txt-muted: 98 98 110;
+    --rgb-danger: 239 68 68;
+    --rgb-success: 52 211 153;
+    --rgb-on-gold: 15 15 18;
+    --cell-mine-bg: rgba(201, 150, 59, 0.15);
+    --cell-mate-bg: rgba(99, 102, 241, 0.15);
+  }
+
+  ::selection {
+    @apply bg-gold/30 text-txt-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-line rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-line-light;
+  }
+}
+
+/* ─── Keyframes ─── */
+
+@keyframes cell-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes cell-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes stamp-press {
+  0% { transform: scale(1.3); opacity: 0; }
+  50% { transform: scale(0.9); opacity: 1; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes seal-spin {
+  0% { transform: rotate(-15deg) scale(0); opacity: 0; }
+  60% { transform: rotate(3deg) scale(1.1); opacity: 1; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(201, 150, 59, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(201, 150, 59, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 150, 59, 0); }
+}
+
+@keyframes pending-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+}
+
+@keyframes ink-spread {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes encouragement-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(168, 120, 36, 0); }
+  50% { box-shadow: 0 0 16px rgba(168, 120, 36, 0.1); }
+}
+
+@keyframes milestone-pop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-2xl border border-line p-6;
+  }
+
+  .card-elevated {
+    @apply bg-surface-elevated rounded-2xl border border-line p-6;
+  }
+
+  .btn-primary {
+    @apply bg-gold hover:bg-gold-light text-on-gold font-semibold py-2.5 px-6 rounded-xl
+           transition-all duration-200 active:scale-[0.98] disabled:opacity-40;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-elevated hover:bg-surface-hover text-txt-secondary font-medium py-2.5 px-6 rounded-xl
+           border border-line hover:border-line-light
+           transition-all duration-200 active:scale-[0.98] disabled:opacity-40;
+  }
+
+  .btn-ghost {
+    @apply text-txt-muted hover:text-txt-secondary font-medium py-2 px-4 rounded-lg
+           transition-colors duration-200;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-surface-dark border border-line text-txt-primary
+           placeholder:text-txt-muted
+           focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20
+           transition-all duration-200;
+  }
+
+  .badge-gold {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gold/10 text-gold text-xs font-medium;
+  }
+
+  .badge-mate {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-mate/10 text-mate text-xs font-medium;
+  }
+
+  .progress-track {
+    @apply h-1.5 bg-line-faint rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gold rounded-full transition-all duration-700 ease-out;
+  }
+
+  .divider {
+    @apply border-t border-line;
+  }
+
+  /* ─── Cell Grid ─── */
+
+  .cell {
+    @apply rounded-lg text-xs font-medium flex items-center justify-center
+           transition-all duration-200 cursor-pointer select-none;
+  }
+
+  .cell-empty {
+    @apply border border-dashed border-line-light text-txt-muted;
+    animation: cell-breathe 3s ease-in-out infinite;
+  }
+  .cell-empty:hover {
+    @apply border-gold/40 text-gold bg-gold/5;
+    animation: none;
+    opacity: 1;
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(201, 150, 59, 0.15);
+  }
+  .cell-empty:active {
+    transform: scale(0.95);
+  }
+
+  .cell-mine {
+    border: 1.5px solid rgb(var(--rgb-gold) / 0.35);
+    color: rgb(var(--rgb-gold));
+    background: var(--cell-mine-bg);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(var(--rgb-gold) / 0.06) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+  .cell-mine:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgb(var(--rgb-gold) / 0.2);
+    animation: cell-shimmer 1.5s ease-in-out;
+  }
+  .cell-mine:active {
+    transform: scale(0.95);
+  }
+
+  .cell-mate {
+    border: 1.5px solid rgb(var(--rgb-mate) / 0.35);
+    color: rgb(var(--rgb-mate));
+    background: var(--cell-mate-bg);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(var(--rgb-mate) / 0.06) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+  .cell-mate:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgb(var(--rgb-mate) / 0.2);
+    animation: cell-shimmer 1.5s ease-in-out;
+  }
+  .cell-mate:active {
+    transform: scale(0.95);
+  }
+
+  .cell-pending {
+    @apply border border-amber-500/50 text-amber-500;
+    background: rgba(245, 158, 11, 0.06);
+    animation: pending-pulse 2s ease-in-out infinite;
+  }
+  .cell-pending:hover {
+    transform: scale(1.08);
+  }
+
+  /* ─── Pledge Document ─── */
+
+  .pledge-document {
+    @apply relative rounded-xl border border-line overflow-hidden;
+    background: rgb(var(--rgb-surface-dark));
+  }
+  .pledge-document::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-[3px];
+    background: linear-gradient(90deg,
+      rgb(var(--rgb-gold) / 0.2),
+      rgb(var(--rgb-gold) / 0.6),
+      rgb(var(--rgb-gold) / 0.2)
+    );
+  }
+
+  .pledge-document-inner {
+    @apply p-5 pt-6;
+  }
+
+  .pledge-ornament {
+    @apply text-center text-gold/30 text-xs tracking-[0.5em] select-none;
+  }
+
+  /* ─── Wax Seal ─── */
+
+  .wax-seal {
+    @apply w-16 h-16 rounded-full flex items-center justify-center mx-auto;
+    background: linear-gradient(135deg, rgb(var(--rgb-gold)), rgb(var(--rgb-gold-dark)));
+    box-shadow: 0 2px 8px rgb(var(--rgb-gold) / 0.3),
+                inset 0 1px 2px rgb(var(--rgb-gold-light) / 0.3);
+    color: rgb(var(--rgb-on-gold));
+  }
+  .wax-seal-animate {
+    animation: seal-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .stamp-animate {
+    animation: stamp-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* ─── Signature Underline Input ─── */
+
+  .signature-input {
+    @apply w-full bg-transparent border-0 border-b-2 border-gold/30 text-center
+           text-lg font-serif text-txt-primary py-2 px-1
+           focus:outline-none focus:border-gold/60
+           placeholder:text-txt-muted/40 placeholder:font-serif
+           transition-colors duration-300;
+  }
+
+  /* ─── Staggered Reveal ─── */
+
+  .reveal-up {
+    animation: fade-slide-up 0.4s ease-out both;
+  }
+
+  /* ─── Skeleton ─── */
+
+  .skeleton {
+    @apply rounded-md bg-line-faint;
+    background-image: linear-gradient(
+      90deg,
+      rgb(var(--rgb-surface-elevated)) 0%,
+      rgb(var(--rgb-surface-hover)) 50%,
+      rgb(var(--rgb-surface-elevated)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* ─── Emoji Reactions ─── */
+
+  .emoji-btn {
+    @apply inline-flex items-center gap-0.5 px-2 py-1 rounded-lg
+           bg-surface-elevated border border-line
+           text-txt-muted text-xs
+           hover:border-line-light hover:bg-surface-hover
+           transition-all duration-150 active:scale-95;
+  }
+
+  .emoji-btn-active {
+    @apply border-gold/30 bg-gold/10 text-gold;
+  }
+
+  /* ─── Certificate ─── */
+
+  .certificate-card {
+    @apply bg-surface rounded-2xl border border-line shadow-2xl overflow-hidden;
+  }
+
+  .certificate-inner {
+    @apply px-8 pt-8 pb-4 relative;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgb(var(--rgb-gold) / 0.02) 10px,
+        rgb(var(--rgb-gold) / 0.02) 20px
+      );
+  }
+
+  .certificate-inner::before {
+    content: '';
+    @apply absolute inset-3 border-2 border-gold/10 rounded-lg pointer-events-none;
+  }
+
+  /* ─── Encouragement Banner ─── */
+
+  .encouragement-banner {
+    @apply text-center py-3 px-4 rounded-xl bg-gold/5 border border-gold/10;
+    animation: fade-slide-up 0.5s ease-out, encouragement-glow 2s ease-in-out 0.5s;
+  }
+
+  /* ─── Activity Feed ─── */
+
+  .activity-item {
+    @apply flex items-start gap-3 py-2.5;
+  }
+
+  .activity-dot {
+    @apply w-2 h-2 rounded-full mt-1.5 shrink-0;
+  }
+
+  /* ─── Dashboard Stat Card ─── */
+
+  .stat-card {
+    @apply bg-surface rounded-2xl border border-line p-4;
+  }
+
+  .stat-value {
+    @apply text-xl font-bold text-txt-primary;
+  }
+
+  .stat-label {
+    @apply text-xs text-txt-muted mt-0.5;
+  }
+
+  /* ─── Milestone Badge ─── */
+
+  .milestone-badge {
+    @apply inline-flex items-center gap-1 px-3 py-1.5 rounded-full
+           bg-gold/10 border border-gold/20 text-gold text-xs font-medium;
+    animation: milestone-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ─── Streak Display ─── */
+
+  .streak-fire {
+    @apply inline-flex items-center gap-1 text-sm font-semibold text-gold;
+  }
+
+  /* ─── Partner Comparison Bar ─── */
+
+  .comparison-bar {
+    @apply h-8 rounded-lg overflow-hidden bg-surface-dark border border-line flex;
+  }
+  .comparison-me {
+    @apply bg-gold/70 flex items-center justify-center text-[10px] font-bold text-on-gold;
+    transition: width 0.7s ease-out;
+  }
+  .comparison-partner {
+    @apply bg-mate/70 flex items-center justify-center text-[10px] font-bold text-on-gold;
+    transition: width 0.7s ease-out;
+  }
+}
