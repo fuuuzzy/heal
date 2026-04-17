@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import { dbHelpers } from '../db/helpers'
-import { generateToken, authMiddleware, getUser } from '../middleware/auth'
+import { dbHelpers } from '../db/helpers.js'
+import { generateToken, authMiddleware, getUser } from '../middleware/auth.js'
 
 const router = Router()
 

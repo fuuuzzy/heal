@@ -2,11 +2,11 @@ import express from 'express'
 import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { initDatabase } from './db'
-import authRoutes from './routes/auth'
-import partnerRoutes from './routes/partner'
-import savingsRoutes from './routes/savings'
-import { errorHandler } from './middleware/errorHandler'
+import { initDatabase } from './db/index.js'
+import authRoutes from './routes/auth.js'
+import partnerRoutes from './routes/partner.js'
+import savingsRoutes from './routes/savings.js'
+import { errorHandler } from './middleware/errorHandler.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

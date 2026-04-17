@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import type { JwtPayload } from '../types'
+import type { JwtPayload } from '../types/index.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'heal-savings-secret-key-change-in-prod'
 

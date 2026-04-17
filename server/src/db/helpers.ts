@@ -1,4 +1,4 @@
-import { getDb, saveDb } from './index'
+import { getDb, saveDb } from './index.js'
 import type { Database } from 'sql.js'
 
 let inTransaction = false
