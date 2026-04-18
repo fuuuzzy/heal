@@ -74,6 +74,20 @@ export function MoonIcon({ className = 'w-4 h-4' }: IconProps) {
   )
 }
 
+/** 系统/自动 — 左半太阳右半月亮 */
+export function SystemIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18" />
+      <path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" fillOpacity={0.15} />
+      <path d="M8 6.5l.5.5" />
+      <path d="M6 12H3" />
+      <path d="M8 17.5l.5-.5" />
+    </svg>
+  )
+}
+
 /** 柔和加号 — 用于空状态 */
 export function PlusIcon({ className = 'w-8 h-8' }: IconProps) {
   return (

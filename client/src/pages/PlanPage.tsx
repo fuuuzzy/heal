@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { FixedSizeGrid as Grid } from 'react-window'
 import { savingsService } from '../services/savingsService'
@@ -177,6 +177,22 @@ export function PlanPage() {
     }
   }
 
+  const gridContainerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = gridContainerRef.current
+      if (!container) return
+      const style = getComputedStyle(container)
+      const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+      setContainerWidth(container.clientWidth - padding)
+    }
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [plan])
+
   const cellSize = 40
   const gap = 3
 
@@ -196,7 +212,7 @@ export function PlanPage() {
     return <div className="text-center py-20 text-txt-muted">计划不存在</div>
   }
 
-  const columns = Math.min(Math.floor((window.innerWidth - 80) / (cellSize + gap)), 50)
+  const columns = containerWidth > 0 ? Math.min(Math.floor((containerWidth - 20) / (cellSize + gap)), 50) : 1
   const rows = Math.ceil(plan.cell_count / columns)
 
   const { stats } = plan
@@ -394,14 +410,16 @@ export function PlanPage() {
       </div>
 
       {/* Grid */}
-      <div className="card overflow-hidden p-3">
+      <div className="card p-3" ref={gridContainerRef}>
+        {containerWidth > 0 && (
         <Grid
           columnCount={columns}
           columnWidth={cellSize + gap}
-          height={Math.min(rows * (cellSize + gap), 500)}
+          height={Math.min(rows * (cellSize + gap), 600)}
           rowCount={rows}
           rowHeight={cellSize + gap}
-          width={Math.min(columns * (cellSize + gap) + 20, window.innerWidth - 80)}
+          width={containerWidth}
+          overscanRowCount={5}
         >
           {({ columnIndex, rowIndex, style }) => {
             const cellIndex = rowIndex * columns + columnIndex
@@ -446,6 +464,7 @@ export function PlanPage() {
             )
           }}
         </Grid>
+        )}
       </div>
 
       {/* Modals */}

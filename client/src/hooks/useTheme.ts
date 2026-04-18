@@ -1,53 +1,55 @@
 import { useEffect, useState, useCallback } from 'react'
 
-type Theme = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark' | 'auto'
+type ResolvedTheme = 'light' | 'dark'
 
-function getSystemTheme(): Theme {
+function getSystemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function getStoredTheme(): Theme | null {
+function getStoredMode(): ThemeMode | null {
   const stored = localStorage.getItem('theme')
-  if (stored === 'dark' || stored === 'light') return stored
+  if (stored === 'dark' || stored === 'light' || stored === 'auto') return stored
   return null
 }
 
-function applyTheme(theme: Theme) {
+function resolveTheme(mode: ThemeMode): ResolvedTheme {
+  return mode === 'auto' ? getSystemTheme() : mode
+}
+
+function applyTheme(resolved: ResolvedTheme) {
   const root = document.documentElement
   root.classList.remove('light', 'dark')
-  root.classList.add(theme)
+  root.classList.add(resolved)
 }
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    return getStoredTheme() || getSystemTheme()
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    return getStoredMode() || 'auto'
   })
 
-  const setTheme = useCallback((t: Theme) => {
-    setThemeState(t)
-    localStorage.setItem('theme', t)
-    applyTheme(t)
+  const resolvedTheme = resolveTheme(mode)
+
+  const setMode = useCallback((m: ThemeMode) => {
+    setModeState(m)
+    localStorage.setItem('theme', m)
+    applyTheme(resolveTheme(m))
   }, [])
 
-  const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
-  }, [theme, setTheme])
-
   useEffect(() => {
-    applyTheme(theme)
-  }, [theme])
+    applyTheme(resolvedTheme)
+  }, [resolvedTheme])
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e: MediaQueryListEvent) => {
-      if (!getStoredTheme()) {
-        applyTheme(e.matches ? 'dark' : 'light')
-        setThemeState(e.matches ? 'dark' : 'light')
+    const handler = () => {
+      if (mode === 'auto') {
+        applyTheme(getSystemTheme())
       }
     }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
-  }, [])
+  }, [mode])
 
-  return { theme, setTheme, toggleTheme }
+  return { mode, resolvedTheme, setMode }
 }

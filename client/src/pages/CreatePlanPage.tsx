@@ -27,16 +27,17 @@ export function CreatePlanPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const numericAmount = Number(targetAmount.replace(/,/g, ''))
   const cellCount = cellPreset || Number(customCells) || 0
-  const cellAmount = cellCount > 0 && Number(targetAmount) > 0
-    ? Math.round((Number(targetAmount) / cellCount) * 100) / 100
+  const cellAmount = cellCount > 0 && numericAmount > 0
+    ? Math.round((numericAmount / cellCount) * 100) / 100
     : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!name || !targetAmount || cellCount < 10) {
+    if (!name || !numericAmount || cellCount < 10) {
       setError('请填写完整信息')
       return
     }
@@ -45,7 +46,7 @@ export function CreatePlanPage() {
     try {
       const plan = await savingsService.createPlan({
         name,
-        target_amount: Number(targetAmount),
+        target_amount: numericAmount,
         cell_count: cellCount,
         cell_theme: cellTheme !== 'default' ? cellTheme : undefined,
         deadline: deadline || undefined,
@@ -87,12 +88,17 @@ export function CreatePlanPage() {
         <div>
           <label className="block text-sm text-txt-secondary mb-1.5">目标金额（元）</label>
           <input
-            type="number"
-            placeholder="如：1000000"
+            type="text"
+            inputMode="decimal"
+            placeholder="如：1,000,000"
             value={targetAmount}
-            onChange={e => setTargetAmount(e.target.value)}
+            onChange={e => {
+              const raw = e.target.value.replace(/,/g, '')
+              if (raw === '' || /^\d+$/.test(raw)) {
+                setTargetAmount(raw ? Number(raw).toLocaleString() : '')
+              }
+            }}
             className="input-field"
-            min="100"
             required
           />
         </div>
@@ -169,11 +175,11 @@ export function CreatePlanPage() {
             <p className="text-xs text-txt-muted uppercase tracking-wider mb-3">预览</p>
             <div className="grid grid-cols-2 gap-y-2 text-sm">
               <span className="text-txt-muted">目标金额</span>
-              <span className="text-right font-medium text-txt-primary">¥{Number(targetAmount).toLocaleString()}</span>
+              <span className="text-right font-medium text-txt-primary">¥{numericAmount.toLocaleString()}</span>
               <span className="text-txt-muted">格子数量</span>
               <span className="text-right font-medium text-txt-primary">{cellCount} 格</span>
               <span className="text-txt-muted">每格金额</span>
-              <span className="text-right font-semibold text-gold">¥{cellAmount}</span>
+              <span className="text-right font-semibold text-gold">¥{cellAmount.toLocaleString()}</span>
               <span className="text-txt-muted">配色</span>
               <span className="text-right font-medium text-txt-primary">
                 {CELL_THEMES.find(t => t.id === cellTheme)?.label}

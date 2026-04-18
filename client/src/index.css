@@ -198,6 +198,11 @@
   .cell {
     @apply rounded-lg text-xs font-medium flex items-center justify-center
            transition-all duration-200 cursor-pointer select-none;
+    position: relative;
+    z-index: 1;
+  }
+  .cell:hover {
+    z-index: 10;
   }
 
   .cell-empty {
@@ -208,11 +213,11 @@
     @apply border-gold/40 text-gold bg-gold/5;
     animation: none;
     opacity: 1;
-    transform: scale(1.08);
-    box-shadow: 0 0 12px rgba(201, 150, 59, 0.15);
+    transform: scale(1.15);
+    box-shadow: 0 4px 16px rgba(201, 150, 59, 0.2);
   }
   .cell-empty:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 
   .cell-mine {
@@ -228,12 +233,12 @@
     background-size: 200% 100%;
   }
   .cell-mine:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 16px rgb(var(--rgb-gold) / 0.2);
+    transform: scale(1.15);
+    box-shadow: 0 4px 20px rgb(var(--rgb-gold) / 0.25);
     animation: cell-shimmer 1.5s ease-in-out;
   }
   .cell-mine:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 
   .cell-mate {
@@ -249,12 +254,12 @@
     background-size: 200% 100%;
   }
   .cell-mate:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 16px rgb(var(--rgb-mate) / 0.2);
+    transform: scale(1.15);
+    box-shadow: 0 4px 20px rgb(var(--rgb-mate) / 0.25);
     animation: cell-shimmer 1.5s ease-in-out;
   }
   .cell-mate:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 
   .cell-pending {
@@ -263,7 +268,7 @@
     animation: pending-pulse 2s ease-in-out infinite;
   }
   .cell-pending:hover {
-    transform: scale(1.08);
+    transform: scale(1.15);
   }
 
   /* ─── Pledge Document ─── */

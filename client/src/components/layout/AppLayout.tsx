@@ -1,11 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
-import { SavingsIcon, HeartPeopleIcon, MemoryBookIcon, SunIcon, MoonIcon } from '../common/Icons'
+import { SavingsIcon, HeartPeopleIcon, MemoryBookIcon, SunIcon, MoonIcon, SystemIcon } from '../common/Icons'
+import type { ThemeMode } from '../../hooks/useTheme'
 
 export function AppLayout() {
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { mode, setMode } = useTheme()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -45,11 +46,14 @@ export function AppLayout() {
             </div>
           </div>
           <button
-            onClick={toggleTheme}
+            onClick={() => {
+              const next: Record<ThemeMode, ThemeMode> = { auto: 'light', light: 'dark', dark: 'auto' }
+              setMode(next[mode])
+            }}
             className="w-full text-left text-sm text-txt-muted hover:text-txt-secondary px-3 py-1.5 mt-1 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-2"
           >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            {theme === 'dark' ? '浅色模式' : '深色模式'}
+            <ThemeIcon mode={mode} />
+            {mode === 'auto' ? '跟随系统' : mode === 'dark' ? '浅色模式' : '深色模式'}
           </button>
           <button
             onClick={handleLogout}
@@ -73,11 +77,14 @@ export function AppLayout() {
         <MobileTab to="/partner" label="伴侣" icon={<HeartPeopleIcon />} />
         <MobileTab to="/archive" label="归档" icon={<MemoryBookIcon />} />
         <button
-          onClick={toggleTheme}
+          onClick={() => {
+            const next: Record<ThemeMode, ThemeMode> = { auto: 'light', light: 'dark', dark: 'auto' }
+            setMode(next[mode])
+          }}
           className="flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors text-txt-muted"
         >
-          <span className="w-5 h-5">{theme === 'dark' ? <SunIcon /> : <MoonIcon />}</span>
-          <span className="text-[10px] font-medium">{theme === 'dark' ? '浅色' : '深色'}</span>
+          <span className="w-5 h-5"><ThemeIcon mode={mode} /></span>
+          <span className="text-[10px] font-medium">{mode === 'auto' ? '自动' : mode === 'dark' ? '浅色' : '深色'}</span>
         </button>
       </nav>
     </div>
@@ -116,5 +123,11 @@ function MobileTab({ to, label, icon }: { to: string; label: string; icon: React
       <span className="text-[10px] font-medium">{label}</span>
     </NavLink>
   )
+}
+
+function ThemeIcon({ mode }: { mode: ThemeMode }) {
+  if (mode === 'auto') return <SystemIcon />
+  if (mode === 'dark') return <SunIcon />
+  return <MoonIcon />
 }
 
