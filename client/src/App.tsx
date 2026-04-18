@@ -12,7 +12,12 @@ import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><span className="text-2xl">🧸</span></div>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-5">
+      <div className="w-10 h-10 rotate-45 rounded-md bg-gradient-to-br from-gold to-gold-dark shadow-[0_0_20px_rgba(168,120,36,0.3),0_0_40px_rgba(168,120,36,0.1)] animate-[loader-breathe_2s_ease-in-out_infinite]" />
+      <div className="text-sm text-txt-muted tracking-[0.15em] animate-[loader-fade_2s_ease-in-out_infinite]">一起存</div>
+    </div>
+  )
   if (!user) return <Navigate to="/login" />
   return <>{children}</>
 }

@@ -12,9 +12,27 @@
     <script>
       ;(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.classList.add(t)}else if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}})()
     </script>
+    <style>
+      #app-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px}
+      #app-loader .diamond{width:40px;height:40px;transform:rotate(45deg);border-radius:6px;
+        background:linear-gradient(135deg,rgb(168 120 36),rgb(138 98 28));
+        box-shadow:0 0 20px rgba(168,120,36,0.3),0 0 40px rgba(168,120,36,0.1);
+        animation:loader-breathe 2s ease-in-out infinite}
+      .dark #app-loader .diamond{background:linear-gradient(135deg,rgb(201 150 59),rgb(166 123 46));
+        box-shadow:0 0 20px rgba(201,150,59,0.3),0 0 40px rgba(201,150,59,0.1)}
+      #app-loader .label{font-size:14px;color:rgb(148 148 160);letter-spacing:0.15em;animation:loader-fade 2s ease-in-out infinite}
+      .dark #app-loader .label{color:rgb(98 98 110)}
+      @keyframes loader-breathe{0%,100%{transform:rotate(45deg) scale(1);opacity:.7}50%{transform:rotate(45deg) scale(1.12);opacity:1}}
+      @keyframes loader-fade{0%,100%{opacity:.5}50%{opacity:1}}
+    </style>
   </head>
   <body class="bg-surface-dark min-h-screen font-sans text-txt-primary antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-loader">
+        <div class="diamond"></div>
+        <div class="label">一起存</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
