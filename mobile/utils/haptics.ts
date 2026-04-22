@@ -41,6 +41,9 @@ export const hapticPatterns = {
   /** Tab switch - selection feedback */
   tabSwitch: () => haptics.selection(),
 
+  /** Light impact - for subtle feedback */
+  light: () => haptics.light(),
+
   /** Medium impact - for standard interactions */
   medium: () => haptics.medium(),
 

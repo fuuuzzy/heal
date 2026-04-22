@@ -79,4 +79,32 @@ router.get('/me', authMiddleware, (req: Request, res: Response) => {
   res.json(user)
 })
 
+// PUT /api/auth/me
+router.put('/me', authMiddleware, (req: Request, res: Response) => {
+  const { userId } = getUser(req)
+  const { nickname, avatar_emoji } = req.body
+
+  if (!nickname || !nickname.trim()) {
+    return res.status(400).json({ error: '昵称不能为空' })
+  }
+
+  dbHelpers.run(
+    'UPDATE users SET nickname = ?, avatar_emoji = ? WHERE id = ?',
+    [nickname.trim(), avatar_emoji || '😊', userId]
+  )
+
+  const user = dbHelpers.queryOne(
+    'SELECT id, username, nickname, avatar_emoji, partner_id, created_at FROM users WHERE id = ?',
+    [userId]
+  )
+
+  res.json(user)
+})
+
+// POST /api/auth/logout
+router.post('/logout', authMiddleware, (req: Request, res: Response) => {
+  // JWT 是无状态的，客户端清除 token 即可
+  res.json({ message: '退出成功' })
+})
+
 export default router

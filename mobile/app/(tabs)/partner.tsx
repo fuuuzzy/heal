@@ -106,69 +106,92 @@ export default function PartnerScreen() {
 
       {partner ? (
         <Animated.View entering={ZoomIn.delay(100).duration(400)} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-          <View style={styles.partnerInfo}>
-            <View style={[styles.avatarContainer, { backgroundColor: colors.gold + '15' }]}>
-              <Text style={styles.avatarEmoji}>{partner.avatar_emoji || '😊'}</Text>
+          {/* Bound Partner Display */}
+          <View style={styles.boundHeader}>
+            <View style={styles.userPairContainer}>
+              {/* Current User */}
+              <View style={styles.userDisplay}>
+                <View style={[styles.avatarCircle, { backgroundColor: colors.gold + '15' }]}>
+                  <Text style={styles.avatarEmoji}>{user?.avatar_emoji || '😊'}</Text>
+                </View>
+                <Text style={[styles.userName, { color: colors.txtSecondary }]}>{user?.nickname}</Text>
+              </View>
+
+              {/* Connection */}
+              <View style={styles.connectionContainer}>
+                <View style={[styles.connectionLine, { backgroundColor: colors.line }]} />
+                <View style={[styles.connectionHeart, { backgroundColor: colors.gold + '10' }]}>
+                  <Text style={styles.heartEmoji}>💕</Text>
+                </View>
+                <View style={[styles.connectionLine, { backgroundColor: colors.line }]} />
+              </View>
+
+              {/* Partner */}
+              <View style={styles.userDisplay}>
+                <View style={[styles.avatarCircle, { backgroundColor: colors.mate + '15' }]}>
+                  <Text style={styles.avatarEmoji}>{partner.avatar_emoji || '😊'}</Text>
+                </View>
+                <Text style={[styles.userName, { color: colors.txtSecondary }]}>{partner.nickname}</Text>
+              </View>
             </View>
-            <View style={styles.partnerDetails}>
-              <Text style={[styles.partnerName, { color: colors.txtPrimary }]}>
-                {partner.nickname}
-              </Text>
-              <Text style={[styles.partnerUsername, { color: colors.txtMuted }]}>
-                @{partner.username}
-              </Text>
-            </View>
-            <Animated.Text entering={ZoomIn.delay(300).duration(200)} style={styles.heartIcon}>
-              💕
-            </Animated.Text>
           </View>
+
+          <Text style={[styles.boundMessage, { color: colors.txtMuted }]}>
+            你们已绑定，可以一起存钱了
+          </Text>
 
           <TouchableOpacity
             style={[styles.unbindButton, { borderColor: colors.danger }]}
             onPress={handleUnbind}
             activeOpacity={0.7}
           >
-            <Text style={[styles.unbindText, { color: colors.danger }]}>解绑</Text>
+            <Text style={[styles.unbindText, { color: colors.danger }]}>解除绑定</Text>
           </TouchableOpacity>
         </Animated.View>
       ) : (
         <View style={styles.bindSection}>
-          <Animated.Text entering={FadeInUp.delay(100).duration(300)} style={[styles.sectionTitle, { color: colors.txtSecondary }]}>
-            邀请伴侣一起存
-          </Animated.Text>
+          {/* Invite Section */}
+          <Animated.View entering={FadeInUp.delay(100).duration(300)} style={[styles.inviteCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <Text style={[styles.cardTitle, { color: colors.txtPrimary }]}>邀请伴侣</Text>
+            <Text style={[styles.cardDesc, { color: colors.txtMuted }]}>
+              将邀请码分享给你的伴侣
+            </Text>
 
-          <Animated.View entering={FadeInUp.delay(200).duration(300)}>
-            <TouchableOpacity
-              style={[styles.generateButton, { backgroundColor: colors.gold }]}
-              onPress={handleGenerateCode}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.generateButtonText, { color: colors.onGold }]}>
-                生成邀请码
-              </Text>
-            </TouchableOpacity>
+            {!inviteCode ? (
+              <TouchableOpacity
+                style={[styles.generateButton, { backgroundColor: colors.gold }]}
+                onPress={handleGenerateCode}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.generateButtonText, { color: colors.onGold }]}>
+                  生成邀请码
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <Animated.View entering={ZoomIn.duration(300)} style={[styles.codeDisplay, { backgroundColor: colors.surfaceDark }]}>
+                <Text style={[styles.codeLabel, { color: colors.txtMuted }]}>你的邀请码</Text>
+                <Text style={[styles.code, { color: colors.gold }]}>{inviteCode}</Text>
+                <Text style={[styles.codeHint, { color: colors.txtMuted }]}>邀请码有效期至对方绑定</Text>
+              </Animated.View>
+            )}
           </Animated.View>
 
-          {inviteCode && (
-            <Animated.View entering={ZoomIn.duration(300)} style={[styles.codeBox, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-              <Text style={[styles.codeLabel, { color: colors.txtMuted }]}>你的邀请码：</Text>
-              <Text style={[styles.code, { color: colors.gold }]}>{inviteCode}</Text>
-            </Animated.View>
-          )}
-
-          <Animated.View entering={FadeInUp.delay(300).duration(300)} style={styles.divider}>
+          {/* Divider */}
+          <Animated.View entering={FadeInUp.delay(200).duration(300)} style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.line }]} />
             <Text style={[styles.dividerText, { color: colors.txtMuted }]}>或</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.line }]} />
           </Animated.View>
 
-          <Animated.Text entering={FadeInUp.delay(400).duration(300)} style={[styles.sectionTitle, { color: colors.txtSecondary }]}>
-            输入对方的邀请码
-          </Animated.Text>
+          {/* Input Section */}
+          <Animated.View entering={FadeInUp.delay(300).duration(300)} style={[styles.inputCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <Text style={[styles.cardTitle, { color: colors.txtPrimary }]}>输入邀请码</Text>
+            <Text style={[styles.cardDesc, { color: colors.txtMuted }]}>
+              输入伴侣分享的邀请码完成绑定
+            </Text>
 
-          <Animated.View entering={FadeInUp.delay(450).duration(300)}>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.line, color: colors.txtPrimary }]}
+              style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
               placeholder="输入6位邀请码"
               placeholderTextColor={colors.txtMuted}
               value={inputCode}
@@ -176,16 +199,21 @@ export default function PartnerScreen() {
               maxLength={6}
               autoCapitalize="characters"
             />
-          </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(500).duration(300)}>
             <TouchableOpacity
-              style={[styles.bindButton, { backgroundColor: colors.gold }]}
+              style={[
+                styles.bindButton,
+                { backgroundColor: inputCode.length === 6 ? colors.gold : colors.surfaceElevated },
+                inputCode.length !== 6 && styles.bindButtonDisabled,
+              ]}
               onPress={handleBindPartner}
               activeOpacity={0.8}
             >
-              <Text style={[styles.bindButtonText, { color: colors.onGold }]}>
-                绑定伴侣
+              <Text style={[
+                styles.bindButtonText,
+                { color: inputCode.length === 6 ? colors.onGold : colors.txtMuted }
+              ]}>
+                绑定
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -208,42 +236,63 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: borderRadius['2xl'],
     borderWidth: 1,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
     ...shadows.card,
   },
-  partnerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  boundHeader: {
+    width: '100%',
     marginBottom: spacing.lg,
   },
-  partnerDetails: {
-    flex: 1,
-  },
-  avatarContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  userPairContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+  },
+  userDisplay: {
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarEmoji: {
     fontSize: 28,
   },
-  partnerName: {
-    fontSize: fontSizes.lg,
-    fontWeight: '600',
-  },
-  partnerUsername: {
+  userName: {
     fontSize: fontSizes.sm,
-    marginTop: 2,
+    marginTop: spacing.sm,
   },
-  heartIcon: {
-    fontSize: 24,
-    marginLeft: 'auto',
+  connectionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.md,
+  },
+  connectionLine: {
+    width: 24,
+    height: 1,
+  },
+  connectionHeart: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: spacing.xs,
+  },
+  heartEmoji: {
+    fontSize: 14,
+  },
+  boundMessage: {
+    fontSize: fontSizes.sm,
+    marginBottom: spacing.lg,
   },
   unbindButton: {
     paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.xl,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
@@ -255,9 +304,27 @@ const styles = StyleSheet.create({
   bindSection: {
     gap: spacing.md,
   },
-  sectionTitle: {
+  inviteCard: {
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  inputCard: {
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    padding: spacing.lg,
+    gap: spacing.md,
+    ...shadows.card,
+  },
+  cardTitle: {
     fontSize: fontSizes.md,
-    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  cardDesc: {
+    fontSize: fontSizes.sm,
+    marginBottom: spacing.md,
   },
   generateButton: {
     paddingVertical: spacing.md,
@@ -268,25 +335,28 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: '600',
   },
-  codeBox: {
+  codeDisplay: {
     padding: spacing.lg,
     borderRadius: 12,
-    borderWidth: 1,
     alignItems: 'center',
   },
   codeLabel: {
     fontSize: fontSizes.sm,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   code: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    letterSpacing: 4,
+    letterSpacing: 6,
+  },
+  codeHint: {
+    fontSize: fontSizes.xs,
+    marginTop: spacing.sm,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: spacing.md,
+    marginVertical: spacing.sm,
   },
   dividerLine: {
     flex: 1,
@@ -310,6 +380,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  bindButtonDisabled: {
+    opacity: 0.6,
   },
   bindButtonText: {
     fontSize: fontSizes.md,

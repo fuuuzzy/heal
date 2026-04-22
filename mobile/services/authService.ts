@@ -18,4 +18,12 @@ export const authService = {
   me: async (): Promise<User> => {
     return api.get<User>('/auth/me');
   },
+
+  updateProfile: async (data: { nickname: string; avatar_emoji: string }): Promise<User> => {
+    return api.put<User>('/auth/me', data);
+  },
+
+  logout: async (): Promise<void> => {
+    return api.post<void>('/auth/logout');
+  },
 };

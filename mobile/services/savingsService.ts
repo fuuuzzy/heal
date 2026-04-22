@@ -22,6 +22,7 @@ export const savingsService = {
     name: string;
     target_amount: number;
     cell_count: number;
+    cell_theme?: string;
     deadline?: string;
     partner_id?: number;
   }): Promise<SavingsPlan> => {

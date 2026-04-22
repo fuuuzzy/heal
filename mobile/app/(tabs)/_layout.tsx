@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native';
-import { BlurView } from 'expo-blur';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { useColorScheme } from '@/components/useColorScheme';
-import { lightColors, darkColors, fontSizes } from '@/constants/theme';
+import { lightColors, darkColors, fontSizes, spacing, shadows } from '@/constants/theme';
 import { hapticPatterns } from '@/utils/haptics';
 
 function TabBarIcon(props: {
@@ -26,6 +27,7 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === 'dark' ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -38,24 +40,27 @@ export default function TabLayout() {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           elevation: 0,
-          height: 80,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+          height: 72 + insets.bottom,
+          paddingBottom: insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 10,
+          fontWeight: '600',
           marginTop: 4,
         },
         tabBarItemStyle: {
           paddingVertical: 4,
         },
         tabBarBackground: () => (
-          <BlurView
-            intensity={colorScheme === 'dark' ? 40 : 80}
-            tint={colorScheme === 'dark' ? 'dark' : 'light'}
-            style={StyleSheet.absoluteFill}
-          />
+          <View style={styles.tabBarContainer}>
+            <BlurView
+              style={styles.tabBarBlur}
+              intensity={colorScheme === 'dark' ? 30 : 70}
+              tint={colorScheme === 'dark' ? 'dark' : 'light'}
+            />
+            <View style={[styles.tabBarBorder, { backgroundColor: colors.line + '30' }]} />
+          </View>
         ),
       }}
     >
@@ -88,7 +93,7 @@ export default function TabLayout() {
         options={{
           title: '归档',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="book" color={color} focused={focused} />
+            <TabBarIcon name="archive" color={color} focused={focused} />
           ),
         }}
         listeners={{
@@ -100,14 +105,29 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabBarContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  tabBarBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  tabBarBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 0.5,
+  },
   iconContainer: {
-    width: 44,
-    height: 32,
+    width: 48,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
   },
   iconContainerFocused: {
-    backgroundColor: 'rgba(168, 120, 36, 0.1)',
+    backgroundColor: 'rgba(168, 120, 36, 0.12)',
+    transform: [{ scale: 1.05 }],
   },
 });

@@ -21,6 +21,13 @@ import { useColorScheme } from '@/components/useColorScheme';
 
 const CELL_COUNT_OPTIONS = [12, 24, 36, 48, 60, 100];
 
+const CELL_THEMES = [
+  { id: 'default', label: '经典金', color: '#A87824' },
+  { id: 'sakura', label: '樱花粉', color: '#F472B6' },
+  { id: 'ocean', label: '海洋蓝', color: '#60A5FA' },
+  { id: 'forest', label: '森林绿', color: '#34D399' },
+];
+
 export default function NewPlanScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -30,6 +37,7 @@ export default function NewPlanScreen() {
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [cellCount, setCellCount] = useState(24);
+  const [cellTheme, setCellTheme] = useState('default');
   const [deadline, setDeadline] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -54,6 +62,7 @@ export default function NewPlanScreen() {
         name: name.trim(),
         target_amount: Number(targetAmount),
         cell_count: cellCount,
+        cell_theme: cellTheme !== 'default' ? cellTheme : undefined,
         deadline: deadline || undefined,
       });
       hapticPatterns.milestone();
@@ -141,6 +150,33 @@ export default function NewPlanScreen() {
             </View>
           </Animated.View>
 
+          <Animated.View entering={FadeInUp.delay(350).duration(300)} style={styles.field}>
+            <Text style={[styles.label, { color: colors.txtSecondary }]}>格子配色</Text>
+            <View style={styles.optionsRow}>
+              {CELL_THEMES.map((theme, index) => (
+                <Animated.View key={theme.id} entering={ZoomIn.delay(400 + index * 30).duration(200)}>
+                  <TouchableOpacity
+                    style={[
+                      styles.themeButton,
+                      { backgroundColor: cellTheme === theme.id ? colors.surfaceElevated : colors.surface, borderColor: cellTheme === theme.id ? colors.gold : colors.line },
+                      cellTheme === theme.id && { borderWidth: 1.5 },
+                    ]}
+                    onPress={() => {
+                      hapticPatterns.selection();
+                      setCellTheme(theme.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.themeDot, { backgroundColor: theme.color }]} />
+                    <Text style={[styles.themeText, { color: cellTheme === theme.id ? colors.gold : colors.txtSecondary }]}>
+                      {theme.label}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.View>
+
           <Animated.View entering={FadeInUp.delay(450).duration(300)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>截止日期（可选）</Text>
             <TextInput
@@ -164,9 +200,25 @@ export default function NewPlanScreen() {
                 </Text>
                 <Text style={[styles.previewText, { color: colors.txtMuted }]}>/ 格</Text>
               </View>
-              <Text style={[styles.previewInfo, { color: colors.txtSecondary }]}>
-                共 {cellCount} 格，每存一格 ¥{cellAmount.toLocaleString()}
-              </Text>
+              <View style={styles.previewDetails}>
+                <View style={styles.previewDetailRow}>
+                  <Text style={[styles.previewDetailLabel, { color: colors.txtMuted }]}>目标金额</Text>
+                  <Text style={[styles.previewDetailValue, { color: colors.txtPrimary }]}>¥{Number(targetAmount).toLocaleString()}</Text>
+                </View>
+                <View style={styles.previewDetailRow}>
+                  <Text style={[styles.previewDetailLabel, { color: colors.txtMuted }]}>格子数量</Text>
+                  <Text style={[styles.previewDetailValue, { color: colors.txtPrimary }]}>{cellCount} 格</Text>
+                </View>
+                <View style={styles.previewDetailRow}>
+                  <Text style={[styles.previewDetailLabel, { color: colors.txtMuted }]}>配色</Text>
+                  <View style={styles.previewThemeRow}>
+                    <View style={[styles.previewThemeDot, { backgroundColor: CELL_THEMES.find(t => t.id === cellTheme)?.color }]} />
+                    <Text style={[styles.previewDetailValue, { color: colors.txtPrimary }]}>
+                      {CELL_THEMES.find(t => t.id === cellTheme)?.label}
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
               {/* Mini grid preview */}
               <View style={styles.miniGrid}>
@@ -175,7 +227,7 @@ export default function NewPlanScreen() {
                     key={i}
                     style={[
                       styles.miniCell,
-                      { backgroundColor: colors.lineFaint, borderColor: colors.line },
+                      { backgroundColor: CELL_THEMES.find(t => t.id === cellTheme)?.color + '20', borderColor: CELL_THEMES.find(t => t.id === cellTheme)?.color + '40' },
                     ]}
                   />
                 ))}
@@ -277,6 +329,24 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: '500',
   },
+  themeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  themeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  themeText: {
+    fontSize: fontSizes.sm,
+    fontWeight: '500',
+  },
   preview: {
     padding: spacing.lg,
     borderRadius: borderRadius['2xl'],
@@ -287,6 +357,8 @@ const styles = StyleSheet.create({
   previewLabel: {
     fontSize: fontSizes.xs,
     marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   previewRow: {
     flexDirection: 'row',
@@ -300,9 +372,32 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     marginLeft: 4,
   },
-  previewInfo: {
+  previewDetails: {
+    width: '100%',
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  previewDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  previewDetailLabel: {
     fontSize: fontSizes.sm,
-    marginTop: spacing.sm,
+  },
+  previewDetailValue: {
+    fontSize: fontSizes.sm,
+    fontWeight: '500',
+  },
+  previewThemeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  previewThemeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   miniGrid: {
     flexDirection: 'row',

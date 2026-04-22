@@ -1,6 +1,7 @@
 /**
  * Bottom Sheet Component
  * 底部抽屉组件 - 用于存入承诺等操作
+ * 使用 iOS 26+ 液态玻璃效果
  */
 import React, { useCallback, useEffect } from 'react';
 import {
@@ -24,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { lightColors, darkColors, borderRadius, shadows } from '@/constants/theme';
 import { timing } from '@/constants/animations';
 import { useColorScheme } from '@/components/useColorScheme';
+import { LiquidGlass } from './LiquidGlass';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -103,12 +105,17 @@ export function BottomSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: colors.surface,
               paddingBottom: insets.bottom + 16,
             },
             sheetStyle,
           ]}
         >
+          <LiquidGlass
+            style={StyleSheet.absoluteFill}
+            intensity={colorScheme === 'dark' ? 40 : 90}
+            tint={colorScheme === 'dark' ? 'dark' : 'light'}
+          />
+
           {showHandle && (
             <View style={styles.handleContainer}>
               <View style={[styles.handle, { backgroundColor: colors.line }]} />
@@ -146,6 +153,7 @@ const styles = StyleSheet.create({
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    overflow: 'hidden',
     ...shadows.lg,
   },
   handleContainer: {
