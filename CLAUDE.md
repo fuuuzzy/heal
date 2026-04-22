@@ -15,20 +15,27 @@ npm run dev
 # Development individually
 npm run dev:server    # Express on :4000 via tsx watch
 npm run dev:client    # Vite dev server on :3000, proxies /api → :4000
+npm run dev:mobile    # Expo dev server (use Expo Go or simulator)
 
-# Build
+# Build (Web)
 npm run build         # Builds client (tsc + vite) then server (tsc)
 
 # Build individually
 npm run build --workspace=client
 npm run build --workspace=server
+
+# Mobile Build
+cd mobile
+./build-android.sh apk      # Build Android APK
+./build-android.sh aab      # Build Android AAB (for Google Play)
+./build-ios.sh              # Generate iOS project, then open in Xcode
 ```
 
 No test framework is configured yet. No linting is configured.
 
 ## Architecture
 
-Monorepo with npm workspaces: `client/` and `server/`.
+Monorepo with npm workspaces: `client/`, `server/`, and `mobile/`.
 
 ### Server (Express + sql.js)
 
@@ -49,6 +56,19 @@ Monorepo with npm workspaces: `client/` and `server/`.
 - **Path alias**: `@/` maps to `client/src/`.
 - **Styling**: Tailwind with custom theme (pink-warm, mint, warm-yellow, cute font family). Rounded, soft aesthetic.
 - **Key pages**: Dashboard (`/`), CreatePlan (`/plan/new`), PlanDetail (`/plan/:id`), Partner (`/partner`).
+
+### Mobile (React Native + Expo)
+
+- **Framework**: Expo SDK 54 with expo-router (file-based routing).
+- **Storage**: `expo-secure-store` (Android) / `@react-native-async-storage/async-storage` (iOS) for token persistence.
+- **API layer**: `mobile/services/api.ts` — same pattern as web client but uses absolute URL. **IMPORTANT**: Update `API_BASE` in `mobile/services/api.ts` to point to your production server before building.
+- **Path alias**: `@/` maps to `mobile/`.
+- **Styling**: React Native `StyleSheet` with theme constants in `mobile/constants/theme.ts`.
+- **Routing structure**:
+  - `(auth)/` — login, register
+  - `(tabs)/` — index (dashboard), partner, archive
+  - `plan/` — [id] (detail), new (create)
+- **Build scripts**: `build-android.sh` and `build-ios.sh` in `mobile/` directory.
 
 ### Data Model
 
@@ -126,6 +146,64 @@ pm2 monit              # CPU/memory monitor
 ```
 
 After code changes: `npm run build && pm2 restart heal`
+
+## Mobile Build (Android/iOS)
+
+### Prerequisites
+
+- Android: Android Studio with SDK, or command-line tools
+- iOS: Xcode 15+, Apple Developer account for App Store distribution
+
+### Android Build
+
+```bash
+cd mobile
+
+# First time: generate signing keystore
+./build-android.sh --gen-keystore --password YOUR_PASSWORD
+
+# Build APK (for testing)
+./build-android.sh apk
+
+# Build AAB (for Google Play)
+./build-android.sh aab --password YOUR_PASSWORD
+```
+
+Output: `mobile/android/app/build/outputs/`
+
+### iOS Build
+
+```bash
+cd mobile
+
+# Generate Xcode project
+./build-ios.sh
+
+# Then open in Xcode
+open ios/HealSavings.xcworkspace
+
+# In Xcode:
+# 1. Select Signing & Capabilities
+# 2. Choose your Team
+# 3. Product > Archive
+# 4. Distribute to App Store / TestFlight
+```
+
+### EAS Cloud Build (Optional)
+
+```bash
+cd mobile
+eas build --platform android
+eas build --platform ios
+```
+
+### Important Notes
+
+1. **API URL**: Before building, update `API_BASE` in `mobile/services/api.ts` to your production server URL.
+2. **App Identifiers**:
+   - iOS: `com.heal.savings` (configure in `app.json`)
+   - Android: `com.heal.savings` (configure in `app.json`)
+3. **Signing**: Android keystore is stored at `mobile/release.jks` — keep it safe!
 
 ## Frontend-Backend Communication
 
