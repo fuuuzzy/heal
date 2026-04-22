@@ -6,14 +6,20 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { savingsService } from '@/services/savingsService';
-import { lightColors, darkColors, spacing, fontSizes } from '@/constants/theme';
-import { useColorScheme } from '@/components/useColorScheme';
+import { lightColors, darkColors, spacing, fontSizes, borderRadius, shadows } from '@/constants/theme';
+import { hapticPatterns } from '@/utils/haptics';
+import { AnimatedProgressBar } from '@/components/AnimatedProgressBar';
+import { PlanCardSkeleton } from '@/components/Skeleton';
+import { staggerConfig } from '@/constants/animations';
 import type { SavingsPlan } from '@/types';
+import { useColorScheme } from '@/components/useColorScheme';
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function ArchiveScreen() {
   const router = useRouter();
@@ -48,47 +54,68 @@ export default function ArchiveScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surfaceDark }]}>
-        <ActivityIndicator size="large" color={colors.gold} />
+      <View style={[styles.container, { backgroundColor: colors.surfaceDark, paddingTop: spacing.xl + insets.top }]}>
+        <View style={{ width: 100, height: 24, backgroundColor: colors.lineFaint, borderRadius: 4, marginBottom: spacing.xl }} />
+        <PlanCardSkeleton />
+        <PlanCardSkeleton />
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceDark, paddingTop: spacing.xl + insets.top }]}>
-      <Text style={[styles.title, { color: colors.txtPrimary }]}>归档计划</Text>
+      <Animated.Text entering={FadeIn.duration(300)} style={[styles.title, { color: colors.txtPrimary }]}>
+        归档计划
+      </Animated.Text>
 
       {plans.length === 0 ? (
-        <View style={styles.emptyState}>
+        <Animated.View entering={FadeInUp.delay(200).duration(300)} style={styles.emptyState}>
           <Text style={[styles.emptyTitle, { color: colors.txtPrimary }]}>
             暂无归档计划
           </Text>
           <Text style={[styles.emptySubtitle, { color: colors.txtMuted }]}>
             完成或归档的计划会显示在这里
           </Text>
-        </View>
+        </Animated.View>
       ) : (
         <FlatList
           data={plans}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.gold}
+            />
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const filledCells = (item as any).filled_cells || 0;
             const progress = Math.min((filledCells / item.cell_count) * 100, 100);
+            const isCompleted = item.status === 'completed';
 
             return (
-              <TouchableOpacity
+              <AnimatedTouchableOpacity
+                entering={FadeInUp.delay(staggerConfig.initialDelay + index * staggerConfig.itemDelay).duration(300)}
                 style={[styles.planCard, { backgroundColor: colors.surface, borderColor: colors.line }]}
-                onPress={() => router.push(`/plan/${item.id}`)}
+                onPress={() => {
+                  hapticPatterns.buttonPress();
+                  router.push(`/plan/${item.id}`);
+                }}
+                activeOpacity={0.8}
               >
                 <View style={styles.planHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.planName, { color: colors.txtPrimary }]}>
-                      {item.name}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                      <Text style={[styles.planName, { color: colors.txtPrimary }]}>
+                        {item.name}
+                      </Text>
+                      {isCompleted && (
+                        <View style={styles.badgeContainer}>
+                          <Text style={styles.badge}>✓</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={[styles.planTarget, { color: colors.txtMuted }]}>
                       目标 ¥{item.target_amount.toLocaleString()}
                     </Text>
@@ -96,7 +123,7 @@ export default function ArchiveScreen() {
                   <View
                     style={[
                       styles.statusBadge,
-                      item.status === 'completed'
+                      isCompleted
                         ? { backgroundColor: 'rgba(22, 148, 68, 0.1)' }
                         : { backgroundColor: 'rgba(168, 120, 36, 0.1)' },
                     ]}
@@ -104,25 +131,18 @@ export default function ArchiveScreen() {
                     <Text
                       style={[
                         styles.statusText,
-                        item.status === 'completed'
+                        isCompleted
                           ? { color: colors.success }
                           : { color: '#9333EA' },
                       ]}
                     >
-                      {item.status === 'completed' ? '已完成' : '已归档'}
+                      {isCompleted ? '已完成' : '已归档'}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.progressSection}>
-                  <View style={[styles.progressBar, { backgroundColor: colors.lineFaint }]}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { backgroundColor: colors.gold, width: `${progress}%` },
-                      ]}
-                    />
-                  </View>
+                  <AnimatedProgressBar progress={progress} />
                   <View style={styles.progressLabels}>
                     <Text style={[styles.progressText, { color: colors.txtMuted }]}>
                       完成率 {progress.toFixed(0)}%
@@ -138,7 +158,7 @@ export default function ArchiveScreen() {
                     归档于 {new Date(item.archived_at).toLocaleDateString('zh-CN')}
                   </Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedTouchableOpacity>
             );
           }}
         />
@@ -175,10 +195,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   planCard: {
-    borderRadius: 16,
+    borderRadius: borderRadius['2xl'],
     borderWidth: 1,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    ...shadows.card,
   },
   planHeader: {
     flexDirection: 'row',
@@ -193,6 +214,19 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     marginTop: 2,
   },
+  badgeContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#169444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   statusBadge: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
@@ -204,15 +238,6 @@ const styles = StyleSheet.create({
   },
   progressSection: {
     gap: spacing.sm,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
   },
   progressLabels: {
     flexDirection: 'row',

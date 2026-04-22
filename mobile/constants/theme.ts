@@ -190,6 +190,7 @@ export const fontSizes = {
   xs: 12,     // text-xs
   sm: 14,     // text-sm
   base: 16,   // text-base
+  md: 16,     // text-md (alias for base)
   lg: 18,     // text-lg
   xl: 20,     // text-xl
   '2xl': 24,  // text-2xl
@@ -209,3 +210,63 @@ export const borderRadius = {
   '3xl': 24,
   full: 9999,
 };
+
+// Shadows (iOS风格阴影)
+export const shadows = {
+  none: {},
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+} as const;
+
+// Glass effect (液态玻璃效果)
+export const glassEffect = {
+  light: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  dark: {
+    backgroundColor: 'rgba(26, 26, 32, 0.85)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+} as const;
+
+// Card style presets
+export const cardPresets = {
+  default: {
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+  },
+  elevated: {
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    ...shadows.card,
+  },
+} as const;

@@ -5,16 +5,21 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
-  Modal,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { useAuth } from '@/hooks/useAuth';
 import { savingsService } from '@/services/savingsService';
-import { lightColors, darkColors, spacing, fontSizes } from '@/constants/theme';
+import { lightColors, darkColors, spacing, fontSizes, shadows, borderRadius } from '@/constants/theme';
+import { hapticPatterns } from '@/utils/haptics';
+import { Cell } from '@/components/Cell';
+import { AnimatedProgressBar } from '@/components/AnimatedProgressBar';
+import { BottomSheet } from '@/components/BottomSheet';
+import { Celebration } from '@/components/Celebration';
 import { useColorScheme } from '@/components/useColorScheme';
 import type { PlanDetail, CellState } from '@/types';
 
@@ -34,6 +39,10 @@ export default function PlanDetailScreen() {
   const [selectedCell, setSelectedCell] = useState<CellState | null>(null);
   const [pledgeContent, setPledgeContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Celebration state
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMilestone, setCelebrationMilestone] = useState<number | undefined>();
 
   useEffect(() => {
     loadPlan();
@@ -56,10 +65,12 @@ export default function PlanDetailScreen() {
     if (plan?.status === 'archived') return;
 
     if (cell.status === 'empty') {
+      hapticPatterns.cellTap();
       setSelectedCell(cell);
       setShowPledgeModal(true);
     } else {
-      // Show cell detail
+      // Show cell detail with haptic feedback
+      hapticPatterns.medium();
       Alert.alert(
         '格子详情',
         `${cell.pledge_content || '无承诺内容'}\n\n${
@@ -76,8 +87,10 @@ export default function PlanDetailScreen() {
                     if (!plan) return;
                     try {
                       await savingsService.approveUnfill(plan.id, cell.index);
+                      hapticPatterns.success();
                       loadPlan();
                     } catch (error: any) {
+                      hapticPatterns.errorShake();
                       Alert.alert('错误', error.message);
                     }
                   },
@@ -92,8 +105,10 @@ export default function PlanDetailScreen() {
                     if (!plan) return;
                     try {
                       await savingsService.requestUnfill(plan.id, cell.index);
+                      hapticPatterns.success();
                       loadPlan();
                     } catch (error: any) {
+                      hapticPatterns.errorShake();
                       Alert.alert('错误', error.message);
                     }
                   },
@@ -107,6 +122,7 @@ export default function PlanDetailScreen() {
 
   const handleSubmitPledge = async () => {
     if (!plan || !selectedCell || !pledgeContent.trim()) {
+      hapticPatterns.errorShake();
       Alert.alert('提示', '请输入承诺内容');
       return;
     }
@@ -122,62 +138,49 @@ export default function PlanDetailScreen() {
       setSelectedCell(null);
       loadPlan();
 
+      // Trigger celebration
+      hapticPatterns.cellFill();
+
       if (result.completed) {
-        Alert.alert('🎉 恭喜！', '计划已完成！');
+        setCelebrationMilestone(100);
+        setShowCelebration(true);
       } else if (result.hit_milestone) {
-        Alert.alert('🎯 达成里程碑', `完成 ${result.hit_milestone}%！`);
+        setCelebrationMilestone(result.hit_milestone);
+        setShowCelebration(true);
       }
     } catch (error: any) {
+      hapticPatterns.errorShake();
       Alert.alert('错误', error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const renderCell = ({ item }: { item: CellState }) => {
+  const renderCell = ({ item, index }: { item: CellState; index: number }) => {
     const isMine = item.filled_by === user?.id;
-    const isPending = item.status === 'unfill_pending';
-
-    let cellStyle = styles.cellEmpty;
-    let textColor = colors.txtMuted;
-    let content = String(item.index + 1);
-
-    if (item.status === 'filled' && isMine) {
-      cellStyle = [styles.cellMine, { backgroundColor: colors.cellMineBg, borderColor: 'rgba(168, 120, 36, 0.35)' }];
-      textColor = colors.gold;
-      content = '◆';
-    } else if (item.status === 'filled' && !isMine) {
-      cellStyle = [styles.cellMate, { backgroundColor: colors.cellMateBg, borderColor: 'rgba(79, 79, 200, 0.35)' }];
-      textColor = colors.mate;
-      content = '◆';
-    } else if (isPending) {
-      cellStyle = [styles.cellPending, { backgroundColor: 'rgba(245, 158, 11, 0.06)', borderColor: 'rgba(245, 158, 11, 0.5)' }];
-      textColor = '#F59E0B';
-      content = '?';
-    }
+    const status = item.status === 'empty' ? 'empty' : item.status === 'unfill_pending' ? 'pending' : 'filled';
 
     return (
-      <TouchableOpacity
-        style={[styles.cell, cellStyle, { borderColor: colors.line }]}
+      <Cell
+        index={item.index}
+        status={status}
+        isMine={isMine}
         onPress={() => handleCellPress(item)}
-      >
-        <Text style={[styles.cellText, { color: textColor }]}>{content}</Text>
-      </TouchableOpacity>
+      />
     );
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.surfaceDark }]}>
-        <ActivityIndicator size="large" color={colors.gold} />
-      </View>
-    );
-  }
-
   if (!plan) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surfaceDark }]}>
-        <Text style={[styles.errorText, { color: colors.txtMuted }]}>计划不存在</Text>
+      <View style={[styles.container, { backgroundColor: colors.surfaceDark, paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={[styles.backButton, { color: colors.gold }]}>← 返回</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.errorText, { color: colors.txtMuted }]}>计划不存在</Text>
+        </View>
       </View>
     );
   }
@@ -188,21 +191,24 @@ export default function PlanDetailScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceDark, paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+      <Animated.View entering={FadeIn.duration(200)} style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
           <Text style={[styles.backButton, { color: colors.gold }]}>← 返回</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={async () => {
             if (plan.created_by !== user?.id) return;
+            hapticPatterns.medium();
             Alert.alert('操作', '选择操作', [
               {
                 text: '归档',
                 onPress: async () => {
                   try {
                     await savingsService.archivePlan(plan.id);
+                    hapticPatterns.success();
                     loadPlan();
                   } catch (error: any) {
+                    hapticPatterns.errorShake();
                     Alert.alert('错误', error.message);
                   }
                 },
@@ -213,8 +219,10 @@ export default function PlanDetailScreen() {
                 onPress: async () => {
                   try {
                     await savingsService.deletePlan(plan.id);
+                    hapticPatterns.success();
                     router.back();
                   } catch (error: any) {
+                    hapticPatterns.errorShake();
                     Alert.alert('错误', error.message);
                   }
                 },
@@ -222,13 +230,14 @@ export default function PlanDetailScreen() {
               { text: '取消', style: 'cancel' },
             ]);
           }}
+          activeOpacity={0.7}
         >
           <Text style={[styles.menuButton, { color: colors.txtMuted }]}>⋯</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Info Card */}
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <Animated.View entering={FadeInUp.delay(100).duration(300)} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Text style={[styles.planName, { color: colors.txtPrimary }]}>{plan.name}</Text>
         <Text style={[styles.cellAmount, { color: colors.txtMuted }]}>
           ¥{plan.cell_amount} / 格
@@ -246,72 +255,80 @@ export default function PlanDetailScreen() {
           <Text style={[styles.percent, { color: colors.gold }]}>{progressPercent}%</Text>
         </View>
 
-        <View style={[styles.progressBar, { backgroundColor: colors.lineFaint }]}>
-          <View
-            style={[styles.progressFill, { backgroundColor: colors.gold, width: `${progressPercent}%` }]}
-          />
-        </View>
-      </View>
+        <AnimatedProgressBar progress={progressPercent} showMilestones />
+      </Animated.View>
 
       {/* Grid */}
-      <FlatList
-        data={plan.cells}
-        keyExtractor={(item) => item.index.toString()}
-        numColumns={8}
-        contentContainerStyle={styles.grid}
-        columnWrapperStyle={{ gap: 6 }}
-        renderItem={renderCell}
-      />
+      <Animated.View entering={FadeInUp.delay(200).duration(300)} style={styles.gridContainer}>
+        <FlatList
+          data={plan.cells}
+          keyExtractor={(item) => item.index.toString()}
+          numColumns={8}
+          contentContainerStyle={styles.grid}
+          columnWrapperStyle={{ gap: 6 }}
+          renderItem={renderCell}
+          scrollEnabled={false}
+        />
+      </Animated.View>
 
       {/* Pledge Modal */}
-      <Modal visible={showPledgeModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.txtPrimary }]}>
-              存入 ¥{plan.cell_amount}
-            </Text>
-            <Text style={[styles.modalSubtitle, { color: colors.txtMuted }]}>
-              写下你的承诺
-            </Text>
+      <BottomSheet visible={showPledgeModal} onClose={() => setShowPledgeModal(false)} snapHeight={320}>
+        <View style={styles.modalContent}>
+          <Text style={[styles.modalTitle, { color: colors.txtPrimary }]}>
+            存入 ¥{plan.cell_amount}
+          </Text>
+          <Text style={[styles.modalSubtitle, { color: colors.txtMuted }]}>
+            写下你的承诺
+          </Text>
 
-            <TextInput
-              style={[
-                styles.pledgeInput,
-                { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary },
-              ]}
-              placeholder="承诺内容..."
-              placeholderTextColor={colors.txtMuted}
-              value={pledgeContent}
-              onChangeText={setPledgeContent}
-              multiline
-              numberOfLines={3}
-            />
+          <TextInput
+            style={[
+              styles.pledgeInput,
+              { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary },
+            ]}
+            placeholder="承诺内容..."
+            placeholderTextColor={colors.txtMuted}
+            value={pledgeContent}
+            onChangeText={setPledgeContent}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.surfaceElevated }]}
-                onPress={() => {
-                  setShowPledgeModal(false);
-                  setPledgeContent('');
-                  setSelectedCell(null);
-                }}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.txtSecondary }]}>取消</Text>
-              </TouchableOpacity>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.surfaceElevated }]}
+              onPress={() => {
+                setShowPledgeModal(false);
+                setPledgeContent('');
+                setSelectedCell(null);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.txtSecondary }]}>取消</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.gold }]}
-                onPress={handleSubmitPledge}
-                disabled={submitting}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.onGold }]}>
-                  {submitting ? '提交中...' : '确认存入'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.gold }, submitting && styles.modalButtonDisabled]}
+              onPress={handleSubmitPledge}
+              disabled={submitting}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.onGold }]}>
+                {submitting ? '提交中...' : '确认存入'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </BottomSheet>
+
+      {/* Celebration */}
+      <Celebration
+        trigger={showCelebration}
+        type={celebrationMilestone === 100 ? 'complete' : 'milestone'}
+        milestone={celebrationMilestone}
+        onComplete={() => setShowCelebration(false)}
+      />
     </View>
   );
 }
@@ -335,11 +352,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   card: {
-    borderRadius: 16,
+    borderRadius: borderRadius['2xl'],
     borderWidth: 1,
     padding: spacing.lg,
     marginBottom: spacing.lg,
+    ...shadows.card,
   },
   planName: {
     fontSize: fontSizes.xl,
@@ -354,6 +377,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     marginTop: spacing.md,
+    marginBottom: spacing.md,
   },
   progressRow: {
     flexDirection: 'row',
@@ -371,49 +395,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    marginTop: spacing.md,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
+  gridContainer: {
+    flex: 1,
   },
   grid: {
     padding: spacing.sm,
-  },
-  cell: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  cellEmpty: {
-    borderStyle: 'dashed',
-  },
-  cellText: {
-    fontSize: fontSizes.xs,
-    fontWeight: '600',
   },
   errorText: {
     fontSize: fontSizes.md,
     textAlign: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
   modalContent: {
-    width: '100%',
-    borderRadius: 20,
     padding: spacing.xl,
   },
   modalTitle: {
@@ -434,7 +426,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     fontSize: fontSizes.md,
-    textAlignVertical: 'top',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -446,6 +437,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
   modalButtonText: {
     fontSize: fontSizes.md,

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAuth } from '@/hooks/useAuth';
-import { lightColors, darkColors, spacing, fontSizes } from '@/constants/theme';
+import { lightColors, darkColors, spacing, fontSizes, borderRadius } from '@/constants/theme';
+import { hapticPatterns } from '@/utils/haptics';
 import { useColorScheme } from '@/components/useColorScheme';
 
 const AVATAR_OPTIONS = ['😊', '😄', '🥰', '😎', '🤓', '😇', '🥳', '😋'];
@@ -24,14 +26,17 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!username.trim() || !password.trim()) {
+      hapticPatterns.errorShake();
       setError('请输入用户名和密码');
       return;
     }
     if (password !== confirmPassword) {
+      hapticPatterns.errorShake();
       setError('两次密码输入不一致');
       return;
     }
     if (!nickname.trim()) {
+      hapticPatterns.errorShake();
       setError('请输入昵称');
       return;
     }
@@ -40,8 +45,10 @@ export default function RegisterScreen() {
     setError('');
     try {
       await register(username, password, nickname, avatarEmoji);
+      hapticPatterns.success();
       router.replace('/(tabs)');
     } catch (err: any) {
+      hapticPatterns.errorShake();
       setError(err.message || '注册失败');
     } finally {
       setLoading(false);
@@ -57,34 +64,34 @@ export default function RegisterScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing[6] }]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 返回按钮 */}
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        {/* Back button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
           <Text style={[styles.backText, { color: colors.gold }]}>← 返回</Text>
         </TouchableOpacity>
 
         {/* Logo */}
-        <View style={styles.logoContainer}>
-          <View style={[styles.logo, { backgroundColor: colors.gold + '10' }]}>
+        <Animated.View entering={ZoomIn.delay(100).duration(400)} style={styles.logoContainer}>
+          <View style={[styles.logo, { backgroundColor: colors.gold + '15' }]}>
             <Text style={[styles.logoText, { color: colors.gold }]}>存</Text>
           </View>
           <Text style={[styles.brandName, { color: colors.txtPrimary }]}>一起存</Text>
-        </View>
+        </Animated.View>
 
-        {/* 标题 */}
-        <View style={styles.titleSection}>
+        {/* Title */}
+        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.titleSection}>
           <Text style={[styles.title, { color: colors.txtPrimary }]}>创建账号</Text>
           <Text style={[styles.subtitle, { color: colors.txtMuted }]}>开始你的储蓄之旅</Text>
-        </View>
+        </Animated.View>
 
-        {/* 表单 */}
+        {/* Form */}
         <View style={styles.form}>
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '20' }]}>
+            <Animated.View entering={FadeInUp.duration(200)} style={[styles.errorBox, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '20' }]}>
               <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
-            </View>
+            </Animated.View>
           )}
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>用户名</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -94,9 +101,9 @@ export default function RegisterScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(350).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>密码</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -106,9 +113,9 @@ export default function RegisterScreen() {
               onChangeText={setPassword}
               secureTextEntry
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>确认密码</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -118,9 +125,9 @@ export default function RegisterScreen() {
               onChangeText={setConfirmPassword}
               secureTextEntry
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(450).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>昵称</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -129,50 +136,56 @@ export default function RegisterScreen() {
               value={nickname}
               onChangeText={setNickname}
             />
-          </View>
+          </Animated.View>
 
-          {/* 头像选择 */}
-          <View style={styles.avatarSection}>
+          {/* Avatar selection */}
+          <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.avatarSection}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>选择头像</Text>
             <View style={styles.avatarGrid}>
-              {AVATAR_OPTIONS.map((emoji) => (
-                <TouchableOpacity
-                  key={emoji}
-                  style={[
-                    styles.avatarOption,
-                    { backgroundColor: colors.surface, borderColor: colors.line },
-                    avatarEmoji === emoji && { borderColor: colors.gold, backgroundColor: colors.gold + '10' },
-                  ]}
-                  onPress={() => setAvatarEmoji(emoji)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.avatarEmoji}>{emoji}</Text>
-                </TouchableOpacity>
+              {AVATAR_OPTIONS.map((emoji, index) => (
+                <Animated.View key={emoji} entering={ZoomIn.delay(550 + index * 50).duration(200)}>
+                  <TouchableOpacity
+                    style={[
+                      styles.avatarOption,
+                      { backgroundColor: colors.surface, borderColor: colors.line },
+                      avatarEmoji === emoji && { borderColor: colors.gold, backgroundColor: colors.gold + '15' },
+                    ]}
+                    onPress={() => {
+                      hapticPatterns.selection();
+                      setAvatarEmoji(emoji);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.avatarEmoji}>{emoji}</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </View>
-          </View>
+          </Animated.View>
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.gold }, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.buttonText, { color: colors.onGold }]}>
-              {loading ? '注册中...' : '注册'}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeInUp.delay(700).duration(400)}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: colors.gold }, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.buttonText, { color: colors.onGold }]}>
+                {loading ? '注册中...' : '注册'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
-        {/* 登录链接 */}
-        <View style={styles.linkSection}>
+        {/* Login link */}
+        <Animated.View entering={FadeInUp.delay(800).duration(400)} style={styles.linkSection}>
           <Text style={[styles.linkText, { color: colors.txtMuted }]}>
             已有账号？
           </Text>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Text style={[styles.linkHighlight, { color: colors.gold }]}>登录</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -199,19 +212,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   logo: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[3],
   },
   logoText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.lg,
     fontWeight: '700',
   },
   brandName: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.xl,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -233,7 +246,7 @@ const styles = StyleSheet.create({
   errorBox: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2.5],
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
   },
   errorText: {
@@ -244,12 +257,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSizes.sm,
+    fontWeight: '500',
   },
   input: {
     width: '100%',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     fontSize: fontSizes.sm,
   },
@@ -274,8 +288,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   button: {
-    paddingVertical: spacing[2.5],
-    borderRadius: 12,
+    paddingVertical: spacing[3],
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     marginTop: spacing[2],
   },
@@ -283,7 +297,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.md,
     fontWeight: '600',
   },
   linkSection: {

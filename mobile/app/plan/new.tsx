@@ -12,8 +12,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { savingsService } from '@/services/savingsService';
-import { lightColors, darkColors, spacing, fontSizes } from '@/constants/theme';
+import { lightColors, darkColors, spacing, fontSizes, borderRadius, shadows } from '@/constants/theme';
+import { hapticPatterns } from '@/utils/haptics';
+import { Celebration } from '@/components/Celebration';
 import { useColorScheme } from '@/components/useColorScheme';
 
 const CELL_COUNT_OPTIONS = [12, 24, 36, 48, 60, 100];
@@ -29,15 +32,18 @@ export default function NewPlanScreen() {
   const [cellCount, setCellCount] = useState(24);
   const [deadline, setDeadline] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const cellAmount = targetAmount ? Math.ceil(Number(targetAmount) / cellCount) : 0;
 
   const handleCreate = async () => {
     if (!name.trim()) {
+      hapticPatterns.errorShake();
       Alert.alert('提示', '请输入计划名称');
       return;
     }
     if (!targetAmount || Number(targetAmount) <= 0) {
+      hapticPatterns.errorShake();
       Alert.alert('提示', '请输入有效的目标金额');
       return;
     }
@@ -50,10 +56,10 @@ export default function NewPlanScreen() {
         cell_count: cellCount,
         deadline: deadline || undefined,
       });
-      Alert.alert('成功', '计划创建成功！', [
-        { text: '好的', onPress: () => router.back() },
-      ]);
+      hapticPatterns.milestone();
+      setShowCelebration(true);
     } catch (error: any) {
+      hapticPatterns.errorShake();
       Alert.alert('错误', error.message || '创建失败');
     } finally {
       setLoading(false);
@@ -66,16 +72,16 @@ export default function NewPlanScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+        <Animated.View entering={FadeInUp.duration(300)} style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Text style={[styles.backButton, { color: colors.gold }]}>取消</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.txtPrimary }]}>创建计划</Text>
           <View style={{ width: 40 }} />
-        </View>
+        </Animated.View>
 
         <View style={styles.form}>
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(100).duration(300)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>计划名称</Text>
             <TextInput
               style={[
@@ -87,9 +93,9 @@ export default function NewPlanScreen() {
               value={name}
               onChangeText={setName}
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(150).duration(300)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>目标金额 (元)</Text>
             <TextInput
               style={[
@@ -102,35 +108,40 @@ export default function NewPlanScreen() {
               onChangeText={setTargetAmount}
               keyboardType="numeric"
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(200).duration(300)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>格子数量</Text>
             <View style={styles.optionsRow}>
-              {CELL_COUNT_OPTIONS.map((count) => (
-                <TouchableOpacity
-                  key={count}
-                  style={[
-                    styles.optionButton,
-                    cellCount === count && { backgroundColor: colors.gold, borderColor: colors.gold },
-                    { backgroundColor: colors.surface, borderColor: colors.line },
-                  ]}
-                  onPress={() => setCellCount(count)}
-                >
-                  <Text
+              {CELL_COUNT_OPTIONS.map((count, index) => (
+                <Animated.View key={count} entering={ZoomIn.delay(250 + index * 30).duration(200)}>
+                  <TouchableOpacity
                     style={[
-                      styles.optionText,
-                      { color: cellCount === count ? colors.onGold : colors.txtSecondary },
+                      styles.optionButton,
+                      cellCount === count && { backgroundColor: colors.gold, borderColor: colors.gold },
+                      { backgroundColor: cellCount === count ? colors.gold : colors.surface, borderColor: cellCount === count ? colors.gold : colors.line },
                     ]}
+                    onPress={() => {
+                      hapticPatterns.selection();
+                      setCellCount(count);
+                    }}
+                    activeOpacity={0.7}
                   >
-                    {count}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.optionText,
+                        { color: cellCount === count ? colors.onGold : colors.txtSecondary },
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </View>
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(450).duration(300)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>截止日期（可选）</Text>
             <TextInput
               style={[
@@ -142,10 +153,10 @@ export default function NewPlanScreen() {
               value={deadline}
               onChangeText={setDeadline}
             />
-          </View>
+          </Animated.View>
 
           {cellAmount > 0 && (
-            <View style={[styles.preview, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <Animated.View entering={ZoomIn.duration(300)} style={[styles.preview, { backgroundColor: colors.surface, borderColor: colors.line }]}>
               <Text style={[styles.previewLabel, { color: colors.txtMuted }]}>预览</Text>
               <View style={styles.previewRow}>
                 <Text style={[styles.previewValue, { color: colors.gold }]}>
@@ -156,24 +167,55 @@ export default function NewPlanScreen() {
               <Text style={[styles.previewInfo, { color: colors.txtSecondary }]}>
                 共 {cellCount} 格，每存一格 ¥{cellAmount.toLocaleString()}
               </Text>
-            </View>
+
+              {/* Mini grid preview */}
+              <View style={styles.miniGrid}>
+                {Array.from({ length: Math.min(cellCount, 24) }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.miniCell,
+                      { backgroundColor: colors.lineFaint, borderColor: colors.line },
+                    ]}
+                  />
+                ))}
+                {cellCount > 24 && (
+                  <Text style={[styles.moreCells, { color: colors.txtMuted }]}>
+                    +{cellCount - 24}
+                  </Text>
+                )}
+              </View>
+            </Animated.View>
           )}
 
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              { backgroundColor: colors.gold },
-              loading && styles.submitButtonDisabled,
-            ]}
-            onPress={handleCreate}
-            disabled={loading}
-          >
-            <Text style={[styles.submitButtonText, { color: colors.onGold }]}>
-              {loading ? '创建中...' : '创建计划'}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeInUp.delay(550).duration(300)}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                { backgroundColor: colors.gold },
+                loading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleCreate}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.submitButtonText, { color: colors.onGold }]}>
+                {loading ? '创建中...' : '创建计划'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </ScrollView>
+
+      <Celebration
+        trigger={showCelebration}
+        type="complete"
+        milestone={100}
+        onComplete={() => {
+          setShowCelebration(false);
+          router.back();
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -214,7 +256,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + 2,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     fontSize: fontSizes.lg,
   },
@@ -237,9 +279,10 @@ const styles = StyleSheet.create({
   },
   preview: {
     padding: spacing.lg,
-    borderRadius: 16,
+    borderRadius: borderRadius['2xl'],
     borderWidth: 1,
     alignItems: 'center',
+    ...shadows.card,
   },
   previewLabel: {
     fontSize: fontSizes.xs,
@@ -260,6 +303,24 @@ const styles = StyleSheet.create({
   previewInfo: {
     fontSize: fontSizes.sm,
     marginTop: spacing.sm,
+  },
+  miniGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    gap: 4,
+    maxWidth: 200,
+  },
+  miniCell: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    borderWidth: 0.5,
+  },
+  moreCells: {
+    fontSize: 10,
+    marginLeft: 4,
   },
   submitButton: {
     paddingVertical: spacing.md + 2,

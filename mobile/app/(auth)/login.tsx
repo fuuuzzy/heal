@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Animated, { FadeInUp, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAuth } from '@/hooks/useAuth';
-import { lightColors, darkColors, spacing, fontSizes } from '@/constants/theme';
+import { lightColors, darkColors, spacing, fontSizes, borderRadius, shadows } from '@/constants/theme';
+import { hapticPatterns } from '@/utils/haptics';
 import { useColorScheme } from '@/components/useColorScheme';
+
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -20,6 +24,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
+      hapticPatterns.errorShake();
       setError('请输入用户名和密码');
       return;
     }
@@ -28,8 +33,10 @@ export default function LoginScreen() {
     setError('');
     try {
       await login(username, password);
+      hapticPatterns.success();
       router.replace('/(tabs)');
     } catch (err: any) {
+      hapticPatterns.errorShake();
       setError(err.message || '登录失败');
     } finally {
       setLoading(false);
@@ -45,29 +52,29 @@ export default function LoginScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing[12] }]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Logo - 与 Web 端一致 */}
-        <View style={styles.logoContainer}>
-          <View style={[styles.logo, { backgroundColor: colors.gold + '10' }]}>
+        {/* Logo */}
+        <Animated.View entering={ZoomIn.delay(100).duration(400)} style={styles.logoContainer}>
+          <View style={[styles.logo, { backgroundColor: colors.gold + '15' }]}>
             <Text style={[styles.logoText, { color: colors.gold }]}>存</Text>
           </View>
           <Text style={[styles.brandName, { color: colors.txtPrimary }]}>一起存</Text>
-        </View>
+        </Animated.View>
 
-        {/* 标题 */}
-        <View style={styles.titleSection}>
+        {/* Title */}
+        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.titleSection}>
           <Text style={[styles.title, { color: colors.txtPrimary }]}>欢迎回来</Text>
           <Text style={[styles.subtitle, { color: colors.txtMuted }]}>登录你的账号以继续</Text>
-        </View>
+        </Animated.View>
 
-        {/* 表单 - 与 Web 端 input-field 一致 */}
+        {/* Form */}
         <View style={styles.form}>
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '20' }]}>
+            <Animated.View entering={FadeIn.duration(200)} style={[styles.errorBox, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '20' }]}>
               <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
-            </View>
+            </Animated.View>
           )}
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>用户名</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -77,9 +84,9 @@ export default function LoginScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
             />
-          </View>
+          </Animated.View>
 
-          <View style={styles.field}>
+          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.field}>
             <Text style={[styles.label, { color: colors.txtSecondary }]}>密码</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surfaceDark, borderColor: colors.line, color: colors.txtPrimary }]}
@@ -89,29 +96,31 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry
             />
-          </View>
+          </Animated.View>
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.gold }, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.buttonText, { color: colors.onGold }]}>
-              {loading ? '登录中...' : '登录'}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeInUp.delay(500).duration(400)}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: colors.gold }, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.buttonText, { color: colors.onGold }]}>
+                {loading ? '登录中...' : '登录'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
-        {/* 注册链接 */}
-        <View style={styles.linkSection}>
+        {/* Register link */}
+        <Animated.View entering={FadeInUp.delay(600).duration(400)} style={styles.linkSection}>
           <Text style={[styles.linkText, { color: colors.txtMuted }]}>
             还没有账号？
           </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/register')} activeOpacity={0.7}>
             <Text style={[styles.linkHighlight, { color: colors.gold }]}>注册</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -131,19 +140,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing[8],
   },
   logo: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[3],
   },
   logoText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.lg,
     fontWeight: '700',
   },
   brandName: {
-    fontSize: fontSizes.lg,
+    fontSize: fontSizes.xl,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -176,18 +185,19 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSizes.sm,
+    fontWeight: '500',
   },
   input: {
     width: '100%',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     fontSize: fontSizes.sm,
   },
   button: {
-    paddingVertical: spacing[2.5],
-    borderRadius: 12,
+    paddingVertical: spacing[3],
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     marginTop: spacing[2],
   },
@@ -195,7 +205,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.md,
     fontWeight: '600',
   },
   linkSection: {
