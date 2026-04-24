@@ -64,6 +64,7 @@ Monorepo with npm workspaces: `client/`, `server/`, and `mobile/`.
 - **API layer**: `mobile/services/api.ts` — same pattern as web client but uses absolute URL. **IMPORTANT**: Update `API_BASE` in `mobile/services/api.ts` to point to your production server before building.
 - **Path alias**: `@/` maps to `mobile/`.
 - **Styling**: React Native `StyleSheet` with theme constants in `mobile/constants/theme.ts`.
+- **Icons**: Always use `@expo/vector-icons/FontAwesome` (same as bottom tab bar). Never use emoji or other icon libraries for UI icons.
 - **Routing structure**:
   - `(auth)/` — login, register
   - `(tabs)/` — index (dashboard), partner, archive

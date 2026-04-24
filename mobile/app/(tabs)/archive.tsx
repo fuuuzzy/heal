@@ -1,7 +1,7 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useRouter} from 'expo-router';
+import {useFocusEffect, useRouter} from 'expo-router';
 import Animated, {FadeIn, FadeInUp} from 'react-native-reanimated';
 import {savingsService} from '@/services/savingsService';
 import {borderRadius, darkColors, fontSizes, lightColors, shadows, spacing} from '@/constants/theme';
@@ -36,9 +36,11 @@ export default function ArchiveScreen() {
         }
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, []),
+    );
 
     const onRefresh = () => {
         setRefreshing(true);

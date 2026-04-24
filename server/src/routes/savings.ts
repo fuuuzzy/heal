@@ -270,6 +270,43 @@ router.get('/dashboard', authMiddleware, (req: Request, res: Response) => {
   })
 })
 
+// GET /api/plans/archived
+router.get('/archived', authMiddleware, (req: Request, res: Response) => {
+  const { userId } = getUser(req)
+  const user = dbHelpers.queryOne<{ partner_id: number | null }>('SELECT partner_id FROM users WHERE id = ?', [userId])
+
+  const plans = dbHelpers.queryAll(
+    'SELECT * FROM savings_plans WHERE (created_by = ? OR partner_id = ?) AND status = ? ORDER BY archived_at DESC',
+    [userId, userId, 'archived']
+  )
+
+  const allPlans = [...plans]
+  if (user?.partner_id) {
+    const partnerPlans = dbHelpers.queryAll(
+      'SELECT * FROM savings_plans WHERE created_by = ? AND status = ? ORDER BY archived_at DESC',
+      [user.partner_id, 'archived']
+    )
+    const existingIds = new Set(plans.map((p: Record<string, unknown>) => p.id))
+    for (const pp of partnerPlans) {
+      if (!existingIds.has(pp.id)) {
+        allPlans.push(pp)
+      }
+    }
+  }
+
+  // Add filled_cells count
+  const plansWithStats = allPlans.map(plan => {
+    const p = plan as Record<string, unknown>
+    const result = dbHelpers.queryOne<{ count: number }>(
+      'SELECT COUNT(*) as count FROM savings_cells WHERE plan_id = ? AND status = ?',
+      [p.id, 'filled']
+    )
+    return { ...plan, filled_cells: result?.count ?? 0 }
+  })
+
+  res.json(plansWithStats)
+})
+
 // GET /api/plans/:id
 router.get('/:id', authMiddleware, (req: Request, res: Response) => {
   const { userId } = getUser(req)

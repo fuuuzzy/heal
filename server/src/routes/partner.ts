@@ -85,7 +85,39 @@ router.get('/status', authMiddleware, (req: Request, res: Response) => {
     [userId, userId]
   )
 
-  res.json(partnership || null)
+  // Also return partner user info
+  const user = dbHelpers.queryOne<{ partner_id: number | null }>('SELECT partner_id FROM users WHERE id = ?', [userId])
+  if (user?.partner_id) {
+    const partnerUser = dbHelpers.queryOne('SELECT id, nickname, avatar_emoji FROM users WHERE id = ?', [user.partner_id])
+    return res.json(partnerUser || null)
+  }
+
+  res.json(null)
+})
+
+// DELETE /api/partner — unbind partner
+router.delete('/', authMiddleware, (req: Request, res: Response) => {
+  const { userId } = getUser(req)
+
+  const user = dbHelpers.queryOne<{ partner_id: number | null }>('SELECT partner_id FROM users WHERE id = ?', [userId])
+  if (!user?.partner_id) {
+    return res.status(400).json({ error: '你还没有绑定伴侣' })
+  }
+
+  const partnerId = user.partner_id
+
+  dbHelpers.runInTransaction(() => {
+    // Remove partnership
+    dbHelpers.run(
+      'DELETE FROM partnerships WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)',
+      [userId, partnerId, partnerId, userId]
+    )
+    // Clear partner_id on both users
+    dbHelpers.run('UPDATE users SET partner_id = NULL WHERE id = ?', [userId])
+    dbHelpers.run('UPDATE users SET partner_id = NULL WHERE id = ?', [partnerId])
+  })
+
+  res.json({ success: true })
 })
 
 export default router
