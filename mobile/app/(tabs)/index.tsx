@@ -1,7 +1,7 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useRouter} from 'expo-router';
+import {useFocusEffect, useRouter} from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Animated, {FadeIn, FadeInUp} from 'react-native-reanimated';
 import {useAuth} from '@/hooks/useAuth';
@@ -94,9 +94,11 @@ export default function DashboardScreen() {
         }
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, []),
+    );
 
     const onRefresh = () => {
         setRefreshing(true);

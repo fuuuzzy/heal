@@ -1,25 +1,29 @@
-import {useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useRouter} from 'expo-router';
-import Animated, {FadeInUp, ZoomIn} from 'react-native-reanimated';
+import Animated, {FadeInUp, useAnimatedStyle, useSharedValue, withTiming, ZoomIn} from 'react-native-reanimated';
+import DateTimePicker, {DateTimePickerEvent} from '@react-native-community/datetimepicker';
 import {savingsService} from '@/services/savingsService';
 import {borderRadius, darkColors, fontSizes, lightColors, shadows, spacing} from '@/constants/theme';
 import {hapticPatterns} from '@/utils/haptics';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import {Celebration} from '@/components/Celebration';
 import {useColorScheme} from '@/components/useColorScheme';
 
-const CELL_COUNT_OPTIONS = [12, 24, 36, 48, 60, 100];
+const CELL_COUNT_OPTIONS = [50, 100, 200];
 
 const CELL_THEMES = [
     {id: 'default', label: '经典金', color: '#A87824'},
@@ -37,12 +41,61 @@ export default function NewPlanScreen() {
     const [name, setName] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [cellCount, setCellCount] = useState(24);
+    const [customCellCount, setCustomCellCount] = useState('');
+    const [isCustomCellCount, setIsCustomCellCount] = useState(false);
     const [cellTheme, setCellTheme] = useState('default');
-    const [deadline, setDeadline] = useState('');
+    const [deadline, setDeadline] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showCelebration, setShowCelebration] = useState(false);
 
-    const cellAmount = targetAmount ? Math.ceil(Number(targetAmount) / cellCount) : 0;
+    const nameFocused = useSharedValue(0);
+    const amountFocused = useSharedValue(0);
+    const customInputRef = useRef<TextInput>(null);
+
+    const effectiveCellCount = isCustomCellCount ? (Number(customCellCount) || 0) : cellCount;
+    const cellAmount = targetAmount && effectiveCellCount > 0
+        ? Math.ceil(Number(targetAmount) / effectiveCellCount)
+        : 0;
+
+    const nameInputStyle = useAnimatedStyle(() => ({
+        borderColor: withTiming(nameFocused.value ? '#A87824' : colors.line, {duration: 200}),
+        borderWidth: withTiming(nameFocused.value ? 1.5 : 1, {duration: 200}),
+    }));
+
+    const amountInputStyle = useAnimatedStyle(() => ({
+        borderColor: withTiming(amountFocused.value ? '#A87824' : colors.line, {duration: 200}),
+        borderWidth: withTiming(amountFocused.value ? 1.5 : 1, {duration: 200}),
+    }));
+
+    const handleSelectCellCount = useCallback((count: number) => {
+        hapticPatterns.selection();
+        setIsCustomCellCount(false);
+        setCellCount(count);
+    }, []);
+
+    const handleSelectCustomCellCount = useCallback(() => {
+        hapticPatterns.selection();
+        setIsCustomCellCount(true);
+        setTimeout(() => customInputRef.current?.focus(), 100);
+    }, []);
+
+    const handleDateChange = useCallback((_event: DateTimePickerEvent, selectedDate?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        if (selectedDate) {
+            setDeadline(selectedDate);
+        }
+    }, []);
+
+    const formatDate = (date: Date | null): string => {
+        if (!date) return '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
 
     const handleCreate = async () => {
         if (!name.trim()) {
@@ -55,15 +108,20 @@ export default function NewPlanScreen() {
             Alert.alert('提示', '请输入有效的目标金额');
             return;
         }
+        if (effectiveCellCount <= 0) {
+            hapticPatterns.errorShake();
+            Alert.alert('提示', '请输入有效的格子数量');
+            return;
+        }
 
         setLoading(true);
         try {
             await savingsService.createPlan({
                 name: name.trim(),
                 target_amount: Number(targetAmount),
-                cell_count: cellCount,
+                cell_count: effectiveCellCount,
                 cell_theme: cellTheme !== 'default' ? cellTheme : undefined,
-                deadline: deadline || undefined,
+                deadline: deadline ? formatDate(deadline) : undefined,
             });
             hapticPatterns.milestone();
             setShowCelebration(true);
@@ -90,62 +148,68 @@ export default function NewPlanScreen() {
                 </Animated.View>
 
                 <View style={styles.form}>
+                    {/* 计划名称 */}
                     <Animated.View entering={FadeInUp.delay(100).duration(300)} style={styles.field}>
                         <Text style={[styles.label, {color: colors.txtSecondary}]}>计划名称</Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {backgroundColor: colors.surface, borderColor: colors.line, color: colors.txtPrimary},
-                            ]}
-                            placeholder="例如：旅行基金"
-                            placeholderTextColor={colors.txtMuted}
-                            value={name}
-                            onChangeText={setName}
-                        />
+                        <Animated.View style={[
+                            styles.inputWrapper,
+                            {backgroundColor: colors.surface},
+                            nameInputStyle,
+                        ]}>
+                            <TextInput
+                                style={[styles.input, {color: colors.txtPrimary}]}
+                                placeholder="例如：旅行基金"
+                                placeholderTextColor={colors.txtMuted}
+                                value={name}
+                                onChangeText={setName}
+                                onFocus={() => { nameFocused.value = 1; }}
+                                onBlur={() => { nameFocused.value = 0; }}
+                            />
+                        </Animated.View>
                     </Animated.View>
 
+                    {/* 目标金额 */}
                     <Animated.View entering={FadeInUp.delay(150).duration(300)} style={styles.field}>
                         <Text style={[styles.label, {color: colors.txtSecondary}]}>目标金额 (元)</Text>
-                        <TextInput
-                            style={[
-                                styles.input,
-                                {backgroundColor: colors.surface, borderColor: colors.line, color: colors.txtPrimary},
-                            ]}
-                            placeholder="例如：10000"
-                            placeholderTextColor={colors.txtMuted}
-                            value={targetAmount}
-                            onChangeText={setTargetAmount}
-                            keyboardType="numeric"
-                        />
+                        <Animated.View style={[
+                            styles.inputWrapper,
+                            {backgroundColor: colors.surface},
+                            amountInputStyle,
+                        ]}>
+                            <TextInput
+                                style={[styles.input, {color: colors.txtPrimary}]}
+                                placeholder="例如：10000"
+                                placeholderTextColor={colors.txtMuted}
+                                value={targetAmount}
+                                onChangeText={setTargetAmount}
+                                keyboardType="numeric"
+                                onFocus={() => { amountFocused.value = 1; }}
+                                onBlur={() => { amountFocused.value = 0; }}
+                            />
+                        </Animated.View>
                     </Animated.View>
 
+                    {/* 格子数量 */}
                     <Animated.View entering={FadeInUp.delay(200).duration(300)} style={styles.field}>
                         <Text style={[styles.label, {color: colors.txtSecondary}]}>格子数量</Text>
-                        <View style={styles.optionsRow}>
+                        <View style={styles.cellCountRow}>
                             {CELL_COUNT_OPTIONS.map((count, index) => (
-                                <Animated.View key={count} entering={ZoomIn.delay(250 + index * 30).duration(200)}>
+                                <Animated.View key={count} entering={ZoomIn.delay(250 + index * 30).duration(200)} style={styles.cellCountItem}>
                                     <TouchableOpacity
                                         style={[
-                                            styles.optionButton,
-                                            cellCount === count && {
-                                                backgroundColor: colors.gold,
-                                                borderColor: colors.gold
-                                            },
+                                            styles.cellCountButton,
                                             {
-                                                backgroundColor: cellCount === count ? colors.gold : colors.surface,
-                                                borderColor: cellCount === count ? colors.gold : colors.line
+                                                backgroundColor: (!isCustomCellCount && cellCount === count) ? colors.gold : colors.surface,
+                                                borderColor: (!isCustomCellCount && cellCount === count) ? colors.gold : colors.line,
                                             },
                                         ]}
-                                        onPress={() => {
-                                            hapticPatterns.selection();
-                                            setCellCount(count);
-                                        }}
+                                        onPress={() => handleSelectCellCount(count)}
                                         activeOpacity={0.7}
                                     >
                                         <Text
                                             style={[
                                                 styles.optionText,
-                                                {color: cellCount === count ? colors.onGold : colors.txtSecondary},
+                                                {color: (!isCustomCellCount && cellCount === count) ? colors.onGold : colors.txtSecondary},
                                             ]}
                                         >
                                             {count}
@@ -153,20 +217,61 @@ export default function NewPlanScreen() {
                                     </TouchableOpacity>
                                 </Animated.View>
                             ))}
+                            <Animated.View entering={ZoomIn.delay(250 + CELL_COUNT_OPTIONS.length * 30).duration(200)} style={styles.cellCountItem}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.cellCountButton,
+                                        {
+                                            backgroundColor: isCustomCellCount ? colors.gold : colors.surface,
+                                            borderColor: isCustomCellCount ? colors.gold : colors.line,
+                                        },
+                                    ]}
+                                    onPress={handleSelectCustomCellCount}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.optionText,
+                                            {color: isCustomCellCount ? colors.onGold : colors.txtSecondary},
+                                        ]}
+                                    >
+                                        自定义
+                                    </Text>
+                                </TouchableOpacity>
+                            </Animated.View>
                         </View>
+                        {isCustomCellCount && (
+                            <Animated.View entering={FadeInUp.duration(200)} style={styles.customInputRow}>
+                                <TextInput
+                                    ref={customInputRef}
+                                    style={[
+                                        styles.customInput,
+                                        {backgroundColor: colors.surface, borderColor: colors.gold, color: colors.txtPrimary},
+                                    ]}
+                                    placeholder="输入数量"
+                                    placeholderTextColor={colors.txtMuted}
+                                    value={customCellCount}
+                                    onChangeText={(text) => setCustomCellCount(text.replace(/[^0-9]/g, ''))}
+                                    keyboardType="numeric"
+                                    maxLength={4}
+                                />
+                                <Text style={[styles.customInputLabel, {color: colors.txtMuted}]}>格</Text>
+                            </Animated.View>
+                        )}
                     </Animated.View>
 
+                    {/* 格子配色 */}
                     <Animated.View entering={FadeInUp.delay(350).duration(300)} style={styles.field}>
                         <Text style={[styles.label, {color: colors.txtSecondary}]}>格子配色</Text>
-                        <View style={styles.optionsRow}>
+                        <View style={styles.themeGrid}>
                             {CELL_THEMES.map((theme, index) => (
-                                <Animated.View key={theme.id} entering={ZoomIn.delay(400 + index * 30).duration(200)}>
+                                <Animated.View key={theme.id} entering={ZoomIn.delay(400 + index * 30).duration(200)} style={styles.themeGridItem}>
                                     <TouchableOpacity
                                         style={[
                                             styles.themeButton,
                                             {
                                                 backgroundColor: cellTheme === theme.id ? colors.surfaceElevated : colors.surface,
-                                                borderColor: cellTheme === theme.id ? colors.gold : colors.line
+                                                borderColor: cellTheme === theme.id ? colors.gold : colors.line,
                                             },
                                             cellTheme === theme.id && {borderWidth: 1.5},
                                         ]}
@@ -187,20 +292,37 @@ export default function NewPlanScreen() {
                         </View>
                     </Animated.View>
 
+                    {/* 截止日期 */}
                     <Animated.View entering={FadeInUp.delay(450).duration(300)} style={styles.field}>
                         <Text style={[styles.label, {color: colors.txtSecondary}]}>截止日期（可选）</Text>
-                        <TextInput
+                        <TouchableOpacity
                             style={[
-                                styles.input,
-                                {backgroundColor: colors.surface, borderColor: colors.line, color: colors.txtPrimary},
+                                styles.datePickerButton,
+                                {backgroundColor: colors.surface, borderColor: colors.line},
                             ]}
-                            placeholder="YYYY-MM-DD"
-                            placeholderTextColor={colors.txtMuted}
-                            value={deadline}
-                            onChangeText={setDeadline}
-                        />
+                            onPress={() => {
+                                hapticPatterns.selection();
+                                setShowDatePicker(true);
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[
+                                styles.datePickerText,
+                                {color: deadline ? colors.txtPrimary : colors.txtMuted},
+                            ]}>
+                                {deadline ? formatDate(deadline) : '选择截止日期'}
+                            </Text>
+                            {deadline ? (
+                                <TouchableOpacity onPress={() => setDeadline(null)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                                    <FontAwesome name="times-circle" size={18} color={colors.txtMuted}/>
+                                </TouchableOpacity>
+                            ) : (
+                                <FontAwesome name="calendar" size={18} color={colors.txtMuted}/>
+                            )}
+                        </TouchableOpacity>
                     </Animated.View>
 
+                    {/* 预览 */}
                     {cellAmount > 0 && (
                         <Animated.View entering={ZoomIn.duration(300)} style={[styles.preview, {
                             backgroundColor: colors.surface,
@@ -222,7 +344,7 @@ export default function NewPlanScreen() {
                                 <View style={styles.previewDetailRow}>
                                     <Text style={[styles.previewDetailLabel, {color: colors.txtMuted}]}>格子数量</Text>
                                     <Text
-                                        style={[styles.previewDetailValue, {color: colors.txtPrimary}]}>{cellCount} 格</Text>
+                                        style={[styles.previewDetailValue, {color: colors.txtPrimary}]}>{effectiveCellCount} 格</Text>
                                 </View>
                                 <View style={styles.previewDetailRow}>
                                     <Text style={[styles.previewDetailLabel, {color: colors.txtMuted}]}>配色</Text>
@@ -234,31 +356,40 @@ export default function NewPlanScreen() {
                                         </Text>
                                     </View>
                                 </View>
+                                {deadline && (
+                                    <View style={styles.previewDetailRow}>
+                                        <Text style={[styles.previewDetailLabel, {color: colors.txtMuted}]}>截止日期</Text>
+                                        <Text style={[styles.previewDetailValue, {color: colors.txtPrimary}]}>
+                                            {formatDate(deadline)}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
 
                             {/* Mini grid preview */}
                             <View style={styles.miniGrid}>
-                                {Array.from({length: Math.min(cellCount, 24)}).map((_, i) => (
+                                {Array.from({length: Math.min(effectiveCellCount, 24)}).map((_, i) => (
                                     <View
                                         key={i}
                                         style={[
                                             styles.miniCell,
                                             {
                                                 backgroundColor: CELL_THEMES.find(t => t.id === cellTheme)?.color + '20',
-                                                borderColor: CELL_THEMES.find(t => t.id === cellTheme)?.color + '40'
+                                                borderColor: CELL_THEMES.find(t => t.id === cellTheme)?.color + '40',
                                             },
                                         ]}
                                     />
                                 ))}
-                                {cellCount > 24 && (
+                                {effectiveCellCount > 24 && (
                                     <Text style={[styles.moreCells, {color: colors.txtMuted}]}>
-                                        +{cellCount - 24}
+                                        +{effectiveCellCount - 24}
                                     </Text>
                                 )}
                             </View>
                         </Animated.View>
                     )}
 
+                    {/* 提交按钮 */}
                     <Animated.View entering={FadeInUp.delay(550).duration(300)}>
                         <TouchableOpacity
                             style={[
@@ -287,6 +418,51 @@ export default function NewPlanScreen() {
                     router.back();
                 }}
             />
+
+            {/* 日期选择弹窗 */}
+            <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDatePicker(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+                    <View style={styles.dateModalOverlay}>
+                        <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                            <View style={[styles.dateModalCard, {backgroundColor: colors.surface}]}>
+                                <Text style={[styles.dateModalTitle, {color: colors.txtPrimary}]}>选择截止日期</Text>
+                                <DateTimePicker
+                                    value={deadline || new Date()}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'inline' : 'spinner'}
+                                    onChange={handleDateChange}
+                                    minimumDate={new Date()}
+                                    style={styles.dateModalPicker}
+                                />
+                                <View style={styles.dateModalActions}>
+                                    <TouchableOpacity
+                                        style={[styles.dateModalButton, {borderColor: colors.line}]}
+                                        onPress={() => {
+                                            setDeadline(null);
+                                            setShowDatePicker(false);
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[styles.dateModalButtonText, {color: colors.txtSecondary}]}>清除</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.dateModalButton, styles.dateModalButtonPrimary, {backgroundColor: colors.gold}]}
+                                        onPress={() => setShowDatePicker(false)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={[styles.dateModalButtonText, {color: colors.onGold}]}>确定</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -323,30 +499,59 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.sm,
         fontWeight: '500',
     },
+    inputWrapper: {
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        overflow: 'hidden',
+    },
     input: {
         width: '100%',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md + 2,
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
         fontSize: fontSizes.lg,
     },
-    optionsRow: {
+    cellCountRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
         gap: spacing.sm,
     },
-    optionButton: {
-        paddingHorizontal: spacing.md,
+    cellCountItem: {
+        flex: 1,
+    },
+    cellCountButton: {
         paddingVertical: spacing.sm + 2,
         borderRadius: 10,
         borderWidth: 1,
-        minWidth: 50,
         alignItems: 'center',
     },
     optionText: {
         fontSize: fontSizes.md,
         fontWeight: '500',
+    },
+    customInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    customInput: {
+        flex: 1,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1.5,
+        fontSize: fontSizes.lg,
+    },
+    customInputLabel: {
+        fontSize: fontSizes.md,
+        fontWeight: '500',
+    },
+    themeGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
+    },
+    themeGridItem: {
+        width: '48%',
     },
     themeButton: {
         flexDirection: 'row',
@@ -365,6 +570,59 @@ const styles = StyleSheet.create({
     themeText: {
         fontSize: fontSizes.sm,
         fontWeight: '500',
+    },
+    datePickerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md + 2,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+    },
+    datePickerText: {
+        fontSize: fontSizes.lg,
+    },
+    dateModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+    },
+    dateModalCard: {
+        width: '100%',
+        borderRadius: borderRadius['2xl'],
+        padding: spacing.lg,
+        ...shadows.card,
+    },
+    dateModalTitle: {
+        fontSize: fontSizes.lg,
+        fontWeight: '600',
+        textAlign: 'center',
+        marginBottom: spacing.md,
+    },
+    dateModalPicker: {
+        alignSelf: 'center',
+    },
+    dateModalActions: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginTop: spacing.lg,
+    },
+    dateModalButton: {
+        flex: 1,
+        paddingVertical: spacing.md,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    dateModalButtonPrimary: {
+        borderWidth: 0,
+    },
+    dateModalButtonText: {
+        fontSize: fontSizes.md,
+        fontWeight: '600',
     },
     preview: {
         padding: spacing.lg,

@@ -18,6 +18,7 @@ const {width: screenWidth} = Dimensions.get('window');
 const GRID_COLUMNS = 8;
 const GRID_GAP = 6;
 const CELL_SIZE = Math.floor((screenWidth - spacing.lg * 2 - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS);
+const GRID_CONTAINER_WIDTH = CELL_SIZE * GRID_COLUMNS + GRID_GAP * (GRID_COLUMNS - 1);
 const INITIAL_VISIBLE_ROWS = 10;
 const INITIAL_VISIBLE_CELLS = GRID_COLUMNS * INITIAL_VISIBLE_ROWS;
 const LOAD_MORE_CELLS = GRID_COLUMNS * 10; // 80 cells per batch
@@ -730,8 +731,8 @@ export default function PlanDetailScreen() {
                 showsVerticalScrollIndicator={true}
                 indicatorStyle={colorScheme === 'dark' ? 'white' : 'black'}
             >
-                {/* Grid cells - centered */}
-                <View style={styles.gridContainer}>
+                {/* Grid cells - centered with fixed width container */}
+                <View style={[styles.gridContainer, {width: GRID_CONTAINER_WIDTH + spacing.lg * 2}]}>
                     <View style={styles.gridWrap}>
                         {plan.cells.slice(0, visibleCount).map((cell: CellState) => {
                             const isMine = cell.filled_by === user?.id;
@@ -742,7 +743,7 @@ export default function PlanDetailScreen() {
                                     : 'filled';
 
                             return (
-                                <View key={cell.index} style={styles.gridCell}>
+                                <View key={cell.index}>
                                     <Cell
                                         index={cell.index}
                                         status={status}
@@ -1004,17 +1005,12 @@ const styles = StyleSheet.create({
     },
     gridContainer: {
         paddingHorizontal: spacing.lg,
-        marginRight: -GRID_GAP,
-        marginBottom: -GRID_GAP,
     },
     gridWrap: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',
-    },
-    gridCell: {
-        marginRight: GRID_GAP,
-        marginBottom: GRID_GAP,
+        gap: GRID_GAP,
     },
     loadMoreBtn: {
         flexDirection: 'row',
