@@ -3,7 +3,7 @@
  * 带动画效果的储蓄格子组件
  */
 import React, {useEffect} from 'react';
-import {StyleSheet, Text, TouchableOpacity, ViewStyle} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View, ViewStyle} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -26,39 +26,42 @@ interface CellProps {
     isMine: boolean;
     onPress: () => void;
     onLongPress?: () => void;
+    size?: number;
     testID?: string;
 }
 
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-export function Cell({index, status, isMine, onPress, onLongPress, testID}: CellProps) {
+export function Cell({index, status, isMine, onPress, onLongPress, size = 38, testID}: CellProps) {
     const colorScheme = useColorScheme();
     const colors = colorScheme === 'dark' ? darkColors : lightColors;
 
-    // Animation values
     const scale = useSharedValue(1);
-    const opacity = useSharedValue(status === 'empty' ? 0.6 : 1);
-    const shimmerPosition = useSharedValue(-1);
+    const opacity = useSharedValue(status === 'empty' ? 0.5 : 1);
+    const pulseScale = useSharedValue(1);
 
-    // Breathing animation for empty cells
+    // Breathing for empty cells
     useEffect(() => {
         if (status === 'empty') {
             opacity.value = withRepeat(
                 withSequence(
-                    withTiming(0.85, {duration: cellAnimations.breathe.duration / 2}),
-                    withTiming(0.6, {duration: cellAnimations.breathe.duration / 2})
+                    withTiming(0.75, {duration: cellAnimations.breathe.duration / 2}),
+                    withTiming(0.45, {duration: cellAnimations.breathe.duration / 2})
                 ),
-                -1, // infinite
+                -1,
                 false
             );
         }
     }, [status]);
 
-    // Shimmer animation for filled cells
+    // Pulse for pending cells
     useEffect(() => {
-        if (status === 'filled') {
-            shimmerPosition.value = withRepeat(
-                withTiming(1, {duration: cellAnimations.shimmer.duration, easing: Easing.inOut(Easing.ease)}),
+        if (status === 'pending') {
+            pulseScale.value = withRepeat(
+                withSequence(
+                    withTiming(1.06, {duration: 800, easing: Easing.inOut(Easing.ease)}),
+                    withTiming(1, {duration: 800, easing: Easing.inOut(Easing.ease)})
+                ),
                 -1,
                 false
             );
@@ -67,18 +70,16 @@ export function Cell({index, status, isMine, onPress, onLongPress, testID}: Cell
 
     const animatedStyle = useAnimatedStyle(() => {
         const result: ViewStyle = {
-            transform: [{scale: scale.value}],
+            transform: [{scale: scale.value * (status === 'pending' ? pulseScale.value : 1)}],
         };
-
         if (status === 'empty') {
             result.opacity = opacity.value;
         }
-
         return result;
     });
 
     const handlePressIn = () => {
-        scale.value = withSpring(cellAnimations.press.scaleDown, {damping: 20, stiffness: 400});
+        scale.value = withSpring(0.92, {damping: 20, stiffness: 400});
     };
 
     const handlePressOut = () => {
@@ -90,76 +91,82 @@ export function Cell({index, status, isMine, onPress, onLongPress, testID}: Cell
         onPress();
     };
 
-    // Get cell style based on status
     const getCellStyle = (): ViewStyle => {
-        const baseStyle: ViewStyle = {
-            width: 38,
-            height: 38,
+        const base: ViewStyle = {
+            width: size,
+            height: size,
             borderRadius: borderRadius.lg,
             alignItems: 'center',
             justifyContent: 'center',
+            overflow: 'hidden',
         };
 
         switch (status) {
             case 'empty':
                 return {
-                    ...baseStyle,
-                    borderWidth: 1,
+                    ...base,
+                    borderWidth: 1.5,
                     borderStyle: 'dashed',
                     borderColor: colors.lineLight,
                     backgroundColor: 'transparent',
                 };
             case 'filled':
                 return {
-                    ...baseStyle,
+                    ...base,
                     ...shadows.sm,
-                    borderWidth: 1.5,
-                    borderColor: isMine
-                        ? 'rgba(168, 120, 36, 0.35)'
-                        : 'rgba(79, 79, 200, 0.35)',
+                    borderWidth: 0,
                     backgroundColor: isMine ? colors.cellMineBg : colors.cellMateBg,
                 };
             case 'pending':
                 return {
-                    ...baseStyle,
-                    borderWidth: 1,
-                    borderColor: 'rgba(245, 158, 11, 0.5)',
-                    backgroundColor: 'rgba(245, 158, 11, 0.06)',
+                    ...base,
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(245, 158, 11, 0.4)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
                 };
             default:
-                return baseStyle;
+                return base;
         }
     };
 
-    // Get text content and color
-    const getTextContent = (): string => {
+    const renderContent = () => {
         switch (status) {
             case 'empty':
-                return String(index + 1);
+                return (
+                    <View style={styles.emptyInner}>
+                        <View style={[styles.plusH, {backgroundColor: colors.lineLight}]}/>
+                        <View style={[styles.plusV, {backgroundColor: colors.lineLight}]}/>
+                    </View>
+                );
             case 'filled':
-                return '◆';
+                return (
+                    <View style={[
+                        styles.filledInner,
+                        {
+                            backgroundColor: isMine
+                                ? 'rgba(168, 120, 36, 0.18)'
+                                : 'rgba(79, 79, 200, 0.18)',
+                        }
+                    ]}>
+                        <View style={[
+                            styles.filledDot,
+                            {backgroundColor: isMine ? colors.gold : colors.mate}
+                        ]}/>
+                    </View>
+                );
             case 'pending':
-                return '?';
+                return (
+                    <View style={styles.pendingInner}>
+                        <Text style={[styles.pendingText, {color: '#F59E0B'}]}>~</Text>
+                    </View>
+                );
             default:
-                return String(index + 1);
-        }
-    };
-
-    const getTextColor = (): string => {
-        switch (status) {
-            case 'empty':
-                return colors.txtMuted;
-            case 'filled':
-                return isMine ? colors.gold : colors.mate;
-            case 'pending':
-                return '#F59E0B';
-            default:
-                return colors.txtMuted;
+                return null;
         }
     };
 
     return (
-        <AnimatedTouchableOpacity
+        <AnimatedTouchable
             style={[getCellStyle(), animatedStyle]}
             onPress={handlePress}
             onLongPress={onLongPress}
@@ -168,16 +175,51 @@ export function Cell({index, status, isMine, onPress, onLongPress, testID}: Cell
             activeOpacity={0.9}
             testID={testID}
         >
-            <Text style={[styles.cellText, {color: getTextColor()}]}>
-                {getTextContent()}
-            </Text>
-        </AnimatedTouchableOpacity>
+            {renderContent()}
+        </AnimatedTouchable>
     );
 }
 
 const styles = StyleSheet.create({
-    cellText: {
-        fontSize: 12,
-        fontWeight: '600',
+    // Empty cell: subtle plus icon
+    emptyInner: {
+        width: 14,
+        height: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    plusH: {
+        position: 'absolute',
+        width: 12,
+        height: 1.5,
+        borderRadius: 1,
+    },
+    plusV: {
+        position: 'absolute',
+        width: 1.5,
+        height: 12,
+        borderRadius: 1,
+    },
+    // Filled cell: glowing dot
+    filledInner: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    filledDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    // Pending cell
+    pendingInner: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pendingText: {
+        fontSize: 18,
+        fontWeight: '700',
     },
 });

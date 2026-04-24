@@ -15,7 +15,7 @@ import {useColorScheme} from '@/components/useColorScheme';
 const EMOJI_OPTIONS = ['😊', '🥰', '😎', '🤩', '😄', '🥳', '🤗', '😇', '🌟', '💝', '💖'];
 
 export default function ProfileScreen() {
-    const {user, refreshUser} = useAuth();
+    const {user, refreshUser, logout} = useAuth();
     const router = useRouter();
     const colorScheme = useColorScheme();
     const colors = colorScheme === 'dark' ? darkColors : lightColors;
@@ -63,9 +63,8 @@ export default function ProfileScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await authService.logout();
+                            await logout();
                             hapticPatterns.success();
-                            router.replace('/(auth)/login');
                         } catch (error: any) {
                             Alert.alert('错误', error.message || '退出失败');
                         }
